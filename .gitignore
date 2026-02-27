@@ -1,0 +1,68 @@
+# Node.js
+node_modules/
+scripts/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Docker & Persistence
+postgres-data/
+redis-data/
+redis-data/dump.rdb
+n8n/
+logs/
+backups/
+
+# Environment & Credentials (SENSITIVE)
+.env
+*.env
+credentials.json
+secrets.*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.history/
+
+# n8n Workflow Management Scripts (Local Only)
+setup_workflows.sh
+manage_workflows.sh
+import_workflows.sh
+import_direct.sh
+import_n8n_workflows.py
+final_setup.sh
+test_delete.sh
+update_manager.py
+update_workflows.py
+UPDATE_GUIDE.py
+export_workflows.sh
+update_workflows.sh
+
+# Temporary & Generated files
+*.tmp
+*.txt
+!README*.md
+SETUP_COMPLETE.md
+WORKFLOW_SETUP_README.md
+n8n_backup_*.sql
+
+# Data & Workflows (Review before committing if shared)
+
+Stage/
+videos/
+media/
