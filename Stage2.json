@@ -27,16 +27,12 @@
         "base": {
           "__rl": true,
           "value": "appvFfyAXIMqyHsRg",
-          "mode": "list",
-          "cachedResultName": "Viral Content Factory",
-          "cachedResultUrl": "https://airtable.com/appvFfyAXIMqyHsRg"
+          "mode": "id"
         },
         "table": {
           "__rl": true,
           "value": "tblexeHTYqlzH5JuR",
-          "mode": "list",
-          "cachedResultName": "Viral Content Database",
-          "cachedResultUrl": "https://airtable.com/appvFfyAXIMqyHsRg/tblexeHTYqlzH5JuR"
+          "mode": "id"
         },
         "filterByFormula": "{Status} = 'Generate Script'",
         "options": {}
@@ -59,7 +55,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "Context and Author Profile:\nUjjwal Roy is the CEO of ScaleBuild AI, a custom AI software development company specializing in workflow automation, customer-facing tools, and AI model development. He also serves as CEO of Seethos AI (computer vision for manufacturing), Chair of IEEE Young Professionals, and founding president of the World AI Alliance. His background spans engineering roles at Intel, Micron, and IBM, as well as Wall Street finance. He is 32 years old.\n\nTask:\nRewrite the following news content as an original thought leadership post for Ujjwal's LinkedIn.\n\nNews Input:\nTitle: {{ $json.Name || 'New Technology Insight' }}\nContent: {{ $json.Content || 'No details provided.' }}\nSubreddit: {{ $json.Subreddit || 'N/A' }}\nUpvotes: {{ $json.Likes || 0 }}\n\nTone and Voice Guidelines:\n- Direct and to the point. No fluff, no filler, no softening language. Say what you mean.\n- Position Ujjwal as a credible, forward-thinking voice in the AI industry who interprets what news means for the broader landscape\n- Reflect the perspective of a hands-on AI CEO who builds real products, not a passive observer\n- Confident and opinionated, but grounded with reasoning or real-world parallels\n- Conversational and punchy, not corporate or formal. Write like a 32-year-old founder talking to peers.\n- Avoid generic AI hype or surface-level commentary. Go deeper with strategic insight or contrarian angles.\n- The output must read like a real human wrote it. Use natural sentence rhythms, occasional imperfect phrasing, and varied sentence lengths. Avoid patterns that feel templated, overly polished, or AI-generated. No perfectly balanced sentence structures. No formulaic transitions. Write the way a smart, busy founder actually talks online.\n\nStructure and Length (STRICT):\n- Maximum two short paragraphs. No exceptions. Each paragraph should be 2 to 4 sentences.\n- Total word count: 50 to 100 words. Treat this as a hard ceiling.\n- The opening sentence must be a strong, creative hook. Not generic, not clickbait. It should be a sharp, original observation or a surprising reframe that makes people stop scrolling. Think of the kind of opener that makes someone say I never thought of it that way.\n- Close with a perspective, prediction, or question that invites engagement\n- Distill the news down to the single most important insight and build the entire post around that one idea. Cut everything else ruthlessly.\n- No bullet points, no numbered lists, no headers\n\nFormatting Rules:\n- Never use em dashes anywhere in the output. Use commas, periods, parentheses, or restructure the sentence instead.\n- No ellipses for dramatic effect\n- No hashtags unless specifically requested\n\nWhat to Avoid:\n- Do not summarize the full news story. Extract only the sharpest takeaway.\n- Do not use buzzwords without substance (e.g., revolutionary, game-changing)\n- Do not write in third person. Write as Ujjwal in first person.\n- Do not pad with filler sentences or repeat the same idea in different words\n- Do not use phrases that are commonly associated with AI-generated content (e.g., Lets dive in, Heres the thing, In todays rapidly evolving landscape, Its not just about X its about Y)\n- Do not open with a question as the hook. Lead with a statement.\n\nReturn ONLY valid JSON, no markdown:\n{\n  \"platform\": \"LinkedIn\",\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"body\": \"...\",\n  \"cta\": \"...\"\n}",
+        "text": "Context and Author Profile:\nUjjwal Roy is the CEO of ScaleBuild AI...\n\nTask:\nRewrite as a LinkedIn post.\n\nNews Input:\nTitle: {{ $json.Name }}\nContent: {{ $json.Content }}\n\nReturn ONLY valid JSON:\n{\n  \"platform\": \"LinkedIn\",\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"body\": \"...\",\n  \"cta\": \"...\"\n}",
         "batching": {}
       },
       "id": "gemini-linkedin",
@@ -74,7 +70,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "Context and Author Profile:\nUjjwal Roy is the CEO of ScaleBuild AI, a custom AI software development company specializing in workflow automation, customer-facing tools, and AI model development. He also serves as CEO of Seethos AI (computer vision for manufacturing), Chair of IEEE Young Professionals, and founding president of the World AI Alliance. His background spans engineering roles at Intel, Micron, and IBM, as well as Wall Street finance. He is 32 years old.\n\nTask:\nRewrite the following news content as an original thought leadership post for Ujjwal's Facebook.\n\nNews Input:\nTitle: {{ $json.Name || 'New Technology Insight' }}\nContent: {{ $json.Content || 'No details provided.' }}\nSubreddit: {{ $json.Subreddit || 'N/A' }}\nUpvotes: {{ $json.Likes || 0 }}\n\nTone and Voice Guidelines:\n- Direct and to the point. No fluff, no filler, no softening language. Say what you mean.\n- Position Ujjwal as a credible, forward-thinking voice in the AI industry who interprets what news means for the broader landscape\n- Reflect the perspective of a hands-on AI CEO who builds real products, not a passive observer\n- Confident and opinionated, but grounded with reasoning or real-world parallels\n- Conversational and punchy, not corporate or formal. Write like a 32-year-old founder talking to peers.\n- Avoid generic AI hype or surface-level commentary. Go deeper with strategic insight or contrarian angles.\n- The output must read like a real human wrote it. Use natural sentence rhythms, occasional imperfect phrasing, and varied sentence lengths. Avoid patterns that feel templated, overly polished, or AI-generated. No perfectly balanced sentence structures. No formulaic transitions. Write the way a smart, busy founder actually talks online.\n\nStructure and Length (STRICT):\n- Maximum two short paragraphs. No exceptions. Each paragraph should be 2 to 4 sentences.\n- Total word count: 50 to 100 words. Treat this as a hard ceiling.\n- The opening sentence must be a strong, creative hook. Not generic, not clickbait. It should be a sharp, original observation or a surprising reframe that makes people stop scrolling. Think of the kind of opener that makes someone say I never thought of it that way.\n- Close with a perspective, prediction, or question that invites engagement\n- Distill the news down to the single most important insight and build the entire post around that one idea. Cut everything else ruthlessly.\n- No bullet points, no numbered lists, no headers\n\nFormatting Rules:\n- Never use em dashes anywhere in the output. Use commas, periods, parentheses, or restructure the sentence instead.\n- No ellipses for dramatic effect\n- No hashtags unless specifically requested\n\nWhat to Avoid:\n- Do not summarize the full news story. Extract only the sharpest takeaway.\n- Do not use buzzwords without substance (e.g., revolutionary, game-changing)\n- Do not write in third person. Write as Ujjwal in first person.\n- Do not pad with filler sentences or repeat the same idea in different words\n- Do not use phrases that are commonly associated with AI-generated content (e.g., Lets dive in, Heres the thing, In todays rapidly evolving landscape, Its not just about X its about Y)\n- Do not open with a question as the hook. Lead with a statement.\n\nReturn ONLY valid JSON, no markdown:\n{\n  \"platform\": \"Facebook\",\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"body\": \"...\",\n  \"cta\": \"...\"\n}",
+        "text": "Context and Author Profile:\nUjjwal Roy is the CEO of ScaleBuild AI...\n\nTask:\nRewrite as a Facebook post.\n\nNews Input:\nTitle: {{ $json.Name }}\nContent: {{ $json.Content }}\n\nReturn ONLY valid JSON:\n{\n  \"platform\": \"Facebook\",\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"body\": \"...\",\n  \"cta\": \"...\"\n}",
         "batching": {}
       },
       "id": "gemini-facebook",
@@ -120,7 +116,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const results = [];\nconst rawInputs = $input.all();\nconst sourceItems = $(\"Find Posts to Script\").all();\nconst sourceCount = sourceItems.length;\n\nif (sourceCount === 0) return [{ json: { _skip: true } }];\n\nfor (let i = 0; i < rawInputs.length; i++) {\n  const item = rawInputs[i];\n  let raw = item.json.text || item.json.output || '{}';\n  let parsed = {};\n  try {\n    parsed = JSON.parse(raw);\n  } catch (e) {\n    const match = raw.match(/\\{[^]*\\}/);\n    if (match) {\n      try { parsed = JSON.parse(match[0]); } catch {}\n    }\n  }\n\n  // Calculate which source record this script corresponds to.\n  const sourceIndex = i % sourceCount;\n  const sourceRecord = sourceItems[sourceIndex]?.json || {};\n\n  // RESILIENT MAPPING: Use fallbacks for all critical fields to avoid skipping scripts\n  const title = parsed.title || parsed.Name || sourceRecord.Name || 'Untitled Script';\n  const platform = parsed.platform || parsed.Target_Platforms || (i < sourceCount ? 'LinkedIn' : 'Facebook');\n\n  results.push({\n    json: {\n      Name: title,\n      Source_Content_ID: sourceRecord.id || sourceRecord.Name || '',\n      Script_Title: title,\n      Target_Platforms: platform,\n      Hook: parsed.hook || '',\n      Main_Content: parsed.body || '',\n      CTA: parsed.cta || '',\n      Status: 'Draft',\n      Created_Date: new Date().toISOString().slice(0, 10)\n    }\n  });\n}\n\nreturn results.length > 0 ? results : [{ json: { _skip: true } }];"
+        "jsCode": "const results = [];\nconst rawInputs = $input.all();\nconst sourceItems = $(\"Find Posts to Script\").all();\nconst sourceCount = sourceItems.length;\n\nif (sourceCount === 0) return [];\n\nfor (let i = 0; i < rawInputs.length; i++) {\n  const item = rawInputs[i];\n  let raw = item.json.text || item.json.output || '{}';\n  let parsed = {};\n  try {\n    parsed = JSON.parse(raw);\n  } catch (e) {\n    const match = raw.match(/\\{[^]*\\}/);\n    if (match) { try { parsed = JSON.parse(match[0]); } catch {} }\n  }\n\n  // Identify source record\n  const sourceIndex = i % sourceCount;\n  const sourceRecord = sourceItems[sourceIndex]?.json || {};\n\n  // FORCE CORRECT PLATFORM: Items 0 to sourceCount-1 are LinkedIn, the rest are Facebook\n  const platform = (i < sourceCount) ? 'LinkedIn' : 'Facebook';\n\n  const title = parsed.title || parsed.Name || sourceRecord.Name || 'Untitled Script';\n\n  results.push({\n    json: {\n      Name: title,\n      Source_Content_ID: [sourceRecord.id],\n      Script_Title: title,\n      Target_Platforms: platform,\n      Hook: parsed.hook || '',\n      Main_Content: parsed.body || '',\n      CTA: parsed.cta || '',\n      Status: 'Draft',\n      Created_Date: new Date().toISOString().slice(0, 10)\n    }\n  });\n}\n\nreturn results;"
       },
       "id": "parse-scripts",
       "name": "Parse & Prepare Scripts",
@@ -168,7 +164,7 @@
       "typeVersion": 2.1,
       "position": [
         1344,
-        432
+        400
       ],
       "credentials": {
         "airtableTokenApi": {
@@ -178,7 +174,6 @@
       }
     }
   ],
-  "pinData": {},
   "connections": {
     "Every Day 8AM": {
       "main": [
@@ -267,15 +262,5 @@
         ]
       ]
     }
-  },
-  "active": false,
-  "settings": {
-    "executionOrder": "v1",
-    "timezone": "UTC"
-  },
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "59f8cb346b5d8766759dae082492ff78f5a0d022521aa8125464caad6f9a6bc3"
-  },
-  "tags": []
+  }
 }

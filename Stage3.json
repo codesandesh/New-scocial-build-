@@ -17,8 +17,8 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        240,
-        560
+        100,
+        400
       ]
     },
     {
@@ -26,12 +26,12 @@
         "operation": "search",
         "base": {
           "__rl": true,
-          "value": "={{ $env.AIRTABLE_BASE_ID }}",
+          "value": "appvFfyAXIMqyHsRg",
           "mode": "id"
         },
         "table": {
           "__rl": true,
-          "value": "={{ $env.AT_TABLE_SCRIPT_LIB }}",
+          "value": "tblQafDU68ylW9f7p",
           "mode": "id"
         },
         "options": {
@@ -44,8 +44,8 @@
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        460,
-        560
+        300,
+        400
       ],
       "credentials": {
         "airtableTokenApi": {
@@ -56,15 +56,29 @@
     },
     {
       "parameters": {
-        "jsCode": "/* Process only ONE original source content at a time - RESTORED TO APPROVED ONLY */\nconst items = $input.all();\nif (!items || items.length === 0) return [];\n\nconst approved = items.filter(i => (i.json.Status || '').trim() === 'Approved');\nif (approved.length === 0) return [];\n\n// 1. Identify the first Source ID in the list\nlet targetSourceId = null;\nfor (const i of approved) {\n  const sid = Array.isArray(i.json.Source_Content_ID) ? i.json.Source_Content_ID[0] : i.json.Source_Content_ID;\n  if (sid) { targetSourceId = sid; break; }\n}\n\n// Fallback if no Source_Content_ID is linked\nif (!targetSourceId) targetSourceId = approved[0].json.id;\n\n// 2. Filter for only items belonging to that specific source\nconst group = approved.filter(i => {\n  const sid = Array.isArray(i.json.Source_Content_ID) ? i.json.Source_Content_ID[0] : i.json.Source_Content_ID;\n  return sid === targetSourceId || (!sid && i.json.id === targetSourceId);\n});\n\nreturn group.map(item => {\n  let plat = item.json['Target_Platforms '] || item.json['Target_Platforms'] || '';\n  if (Array.isArray(plat)) plat = plat.join(',');\n  plat = (plat || '').toLowerCase();\n\n  const title = (item.json.Script_Title || '').toLowerCase();\n  let platform = 'linkedin';\n  if (plat.includes('face') || plat.includes('fb') || title.includes('facebook')) {\n    platform = 'facebook';\n  }\n\n  return {\n    json: {\n      ...item.json,\n      _target_platform: platform\n    }\n  };\n});"
+        "jsCode": "/* Group ONLY items for the first Source Content ID found */\nconst items = $input.all();\nif (!items || items.length === 0) return [];\n\nlet targetSourceId = null;\nfor (const i of items) {\n  const sid = Array.isArray(i.json.Source_Content_ID) ? i.json.Source_Content_ID[0] : i.json.Source_Content_ID;\n  if (sid) { targetSourceId = sid; break; }\n}\n\nif (!targetSourceId) targetSourceId = items[0].json.id;\n\nreturn items.filter(i => {\n  const sid = Array.isArray(i.json.Source_Content_ID) ? i.json.Source_Content_ID[0] : i.json.Source_Content_ID;\n  return sid === targetSourceId || (!sid && i.json.id === targetSourceId);\n});"
       },
       "id": "node-filter",
-      "name": "Filter and Group",
+      "name": "Filter First Source",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        680,
-        560
+        500,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "node-split",
+      "name": "Loop Through Scripts",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        720,
+        400
       ]
     },
     {
@@ -72,19 +86,20 @@
         "conditions": {
           "string": [
             {
-              "value1": "={{ $json._target_platform }}",
+              "value1": "={{ ($json['Target_Platforms '] || $json.Target_Platforms || '').toLowerCase() }}",
+              "operation": "contains",
               "value2": "facebook"
             }
           ]
         }
       },
-      "id": "node-if-fb",
+      "id": "node-if",
       "name": "Is Facebook?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        900,
-        560
+        940,
+        400
       ]
     },
     {
@@ -96,7 +111,7 @@
           "parameters": [
             {
               "name": "message",
-              "value": "={{ $json.Hook + '\\n\\n' + $json.Main_Content + '\\n\\n' + ($json['CTA '] || $json.CTA || '') }}"
+              "value": "={{ $json.Hook + '\\n\\n' + $json.Main_Content + '\\n\\n' + ($json.CTA || $json['CTA '] || '') }}"
             },
             {
               "name": "access_token",
@@ -111,13 +126,13 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1120,
-        440
+        1180,
+        300
       ]
     },
     {
       "parameters": {
-        "text": "={{ $json.Hook + '\\n\\n' + $json.Main_Content + '\\n\\n' + ($json['CTA '] || $json.CTA || '') }}",
+        "text": "={{ $json.Hook + '\\n\\n' + $json.Main_Content + '\\n\\n' + ($json.CTA || $json['CTA '] || '') }}",
         "additionalFields": {}
       },
       "id": "node-post-li",
@@ -125,8 +140,8 @@
       "type": "n8n-nodes-base.linkedIn",
       "typeVersion": 1,
       "position": [
-        1120,
-        700
+        1180,
+        500
       ],
       "credentials": {
         "linkedInOAuth2Api": {
@@ -137,46 +152,18 @@
     },
     {
       "parameters": {
-        "mode": "combine",
-        "combinationMode": "mergeByPosition"
-      },
-      "id": "node-merge-fb",
-      "name": "Merge FB Data",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 1,
-      "position": [
-        1380,
-        440
-      ]
-    },
-    {
-      "parameters": {
-        "mode": "combine",
-        "combinationMode": "mergeByPosition"
-      },
-      "id": "node-merge-li",
-      "name": "Merge LI Data",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 1,
-      "position": [
-        1380,
-        700
-      ]
-    },
-    {
-      "parameters": {
         "operation": "update",
         "base": {
           "__rl": true,
-          "value": "={{ $env.AIRTABLE_BASE_ID }}",
+          "value": "appvFfyAXIMqyHsRg",
           "mode": "id"
         },
         "table": {
           "__rl": true,
-          "value": "={{ $env.AT_TABLE_SCRIPT_LIB }}",
+          "value": "tblQafDU68ylW9f7p",
           "mode": "id"
         },
-        "id": "={{ $json.id }}",
+        "id": "={{ $(\"Loop Through Scripts\").item.json.id }}",
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
@@ -189,54 +176,13 @@
           "typecast": true
         }
       },
-      "id": "node-mark-fb",
-      "name": "Mark Posted Facebook",
+      "id": "node-mark",
+      "name": "Mark Posted",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        1600,
-        440
-      ],
-      "credentials": {
-        "airtableTokenApi": {
-          "id": "rWrYEtYQAEpY7zli",
-          "name": "Airtable Personal Access Token account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "base": {
-          "__rl": true,
-          "value": "={{ $env.AIRTABLE_BASE_ID }}",
-          "mode": "id"
-        },
-        "table": {
-          "__rl": true,
-          "value": "={{ $env.AT_TABLE_SCRIPT_LIB }}",
-          "mode": "id"
-        },
-        "id": "={{ $json.id }}",
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "Status": "Posted",
-            "Published_Date": "={{ $now.format('yyyy-MM-dd') }}"
-          },
-          "matchingColumns": []
-        },
-        "options": {
-          "typecast": true
-        }
-      },
-      "id": "node-mark-li",
-      "name": "Mark Posted LinkedIn",
-      "type": "n8n-nodes-base.airtable",
-      "typeVersion": 2.1,
-      "position": [
-        1600,
-        700
+        1450,
+        400
       ],
       "credentials": {
         "airtableTokenApi": {
@@ -262,14 +208,25 @@
       "main": [
         [
           {
-            "node": "Filter and Group",
+            "node": "Filter First Source",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Filter and Group": {
+    "Filter First Source": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Through Scripts": {
       "main": [
         [
           {
@@ -287,11 +244,6 @@
             "node": "Post to Facebook",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Merge FB Data",
-            "type": "main",
-            "index": 1
           }
         ],
         [
@@ -299,11 +251,6 @@
             "node": "Post to LinkedIn",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Merge LI Data",
-            "type": "main",
-            "index": 1
           }
         ]
       ]
@@ -312,7 +259,7 @@
       "main": [
         [
           {
-            "node": "Merge FB Data",
+            "node": "Mark Posted",
             "type": "main",
             "index": 0
           }
@@ -323,42 +270,23 @@
       "main": [
         [
           {
-            "node": "Merge LI Data",
+            "node": "Mark Posted",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Merge FB Data": {
+    "Mark Posted": {
       "main": [
         [
           {
-            "node": "Mark Posted Facebook",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge LI Data": {
-      "main": [
-        [
-          {
-            "node": "Mark Posted LinkedIn",
+            "node": "Loop Through Scripts",
             "type": "main",
             "index": 0
           }
         ]
       ]
     }
-  },
-  "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "meta": {
-    "templateCredsSetupCompleted": true
-  },
-  "tags": []
+  }
 }
