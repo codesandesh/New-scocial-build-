@@ -12,10 +12,10 @@
           ]
         }
       },
-      "id": "node-manual",
+      "id": "node-trigger",
       "name": "Every 1 Minute",
       "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
+      "typeVersion": 1.1,
       "position": [
         100,
         400
@@ -56,49 +56,14 @@
     },
     {
       "parameters": {
-        "jsCode": "/* Group ONLY items for the first Source Content ID found */\nconst items = $input.all();\nif (!items || items.length === 0) return [];\n\nlet targetSourceId = null;\nfor (const i of items) {\n  const sid = Array.isArray(i.json.Source_Content_ID) ? i.json.Source_Content_ID[0] : i.json.Source_Content_ID;\n  if (sid) { targetSourceId = sid; break; }\n}\n\nif (!targetSourceId) targetSourceId = items[0].json.id;\n\nreturn items.filter(i => {\n  const sid = Array.isArray(i.json.Source_Content_ID) ? i.json.Source_Content_ID[0] : i.json.Source_Content_ID;\n  return sid === targetSourceId || (!sid && i.json.id === targetSourceId);\n});"
+        "jsCode": "/* PAIR-BASED GROUPING: Strict grouping by Source_Content_ID with Safety Checks */\nconst items = $input.all();\nif (!items || items.length === 0) return [];\n\nconst getVal = (obj, key) => {\n  const k = Object.keys(obj).find(x => x.toLowerCase().replace(/[\\s_]/g, '') === key.toLowerCase().replace(/[\\s_]/g, ''));\n  let val = k ? obj[k] : null;\n  if (Array.isArray(val)) val = val.join(', ');\n  return val || '';\n};\n\nlet targetSourceId = null;\nfor (const i of items) {\n  const sid = getVal(i.json, 'SourceContentID');\n  if (sid) { targetSourceId = sid; break; }\n}\nif (!targetSourceId) targetSourceId = items[0].json.id;\n\nconst pair = items.filter(i => {\n  const sid = getVal(i.json, 'SourceContentID');\n  return sid === targetSourceId || (!sid && i.json.id === targetSourceId);\n});\n\nconst fb = pair.find(i => getVal(i.json, 'TargetPlatforms').toLowerCase().includes('face'));\nconst li = pair.find(i => getVal(i.json, 'TargetPlatforms').toLowerCase().includes('linked'));\n\nconst buildMsg = (item) => {\n  if (!item) return null;\n  const hook = item.json.Hook || '';\n  const body = item.json.Main_Content || '';\n  const cta = getVal(item.json, 'CTA');\n  const full = (hook + '\\n\\n' + body + '\\n\\n' + cta).trim();\n  \n  // SAFETY GATE: If script contains n8n placeholders, BLOCK IT\n  if (full.includes('{{') || full.includes('$json')) {\n    console.error('BLOCKING DIRTY SCRIPT: ' + item.json.id);\n    return null;\n  }\n  return full;\n};\n\nreturn [{\n  json: {\n    source_id: targetSourceId,\n    fb_msg: buildMsg(fb),\n    fb_id: fb ? fb.json.id : null,\n    li_msg: buildMsg(li),\n    li_id: li ? li.json.id : null\n  }\n}];"
       },
-      "id": "node-filter",
-      "name": "Filter First Source",
+      "id": "node-group",
+      "name": "Group Topic Pair",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        500,
-        400
-      ]
-    },
-    {
-      "parameters": {
-        "batchSize": 1,
-        "options": {}
-      },
-      "id": "node-split",
-      "name": "Loop Through Scripts",
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 1,
-      "position": [
-        720,
-        400
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "string": [
-            {
-              "value1": "={{ ($json['Target_Platforms '] || $json.Target_Platforms || '').toLowerCase() }}",
-              "operation": "contains",
-              "value2": "facebook"
-            }
-          ]
-        }
-      },
-      "id": "node-if",
-      "name": "Is Facebook?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [
-        940,
+        520,
         400
       ]
     },
@@ -111,7 +76,7 @@
           "parameters": [
             {
               "name": "message",
-              "value": "={{ $json.Hook + '\\n\\n' + $json.Main_Content + '\\n\\n' + ($json.CTA || $json['CTA '] || '') }}"
+              "value": "={{ $(\"Group Topic Pair\").item.json.fb_msg }}"
             },
             {
               "name": "access_token",
@@ -126,13 +91,14 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        1180,
+        750,
         300
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "text": "={{ $json.Hook + '\\n\\n' + $json.Main_Content + '\\n\\n' + ($json.CTA || $json['CTA '] || '') }}",
+        "text": "={{ $(\"Group Topic Pair\").item.json.li_msg }}",
         "additionalFields": {}
       },
       "id": "node-post-li",
@@ -140,7 +106,7 @@
       "type": "n8n-nodes-base.linkedIn",
       "typeVersion": 1,
       "position": [
-        1180,
+        750,
         500
       ],
       "credentials": {
@@ -148,7 +114,8 @@
           "id": "EjVjU4yvzE7uSE2U",
           "name": "LinkedIn account 2"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -163,12 +130,12 @@
           "value": "tblQafDU68ylW9f7p",
           "mode": "id"
         },
-        "id": "={{ $(\"Loop Through Scripts\").item.json.id }}",
+        "id": "={{ $(\"Group Topic Pair\").item.json.fb_id }}",
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Status": "Posted",
-            "Published_Date": "={{ $now.format('yyyy-MM-dd') }}"
+            "Status": "={{ $(\"Group Topic Pair\").item.json.fb_msg ? 'Posted' : 'Generation Error' }}",
+            "Published_Date": "={{ $(\"Group Topic Pair\").item.json.fb_msg ? $now.format('yyyy-MM-dd') : null }}"
           },
           "matchingColumns": []
         },
@@ -176,13 +143,55 @@
           "typecast": true
         }
       },
-      "id": "node-mark",
-      "name": "Mark Posted",
+      "id": "node-mark-fb",
+      "name": "Mark FB Posted",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        1450,
-        400
+        1000,
+        300
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "rWrYEtYQAEpY7zli",
+          "name": "Airtable Personal Access Token account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appvFfyAXIMqyHsRg",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblQafDU68ylW9f7p",
+          "mode": "id"
+        },
+        "id": "={{ $(\"Group Topic Pair\").item.json.li_id }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "={{ $(\"Group Topic Pair\").item.json.li_msg ? 'Posted' : 'Generation Error' }}",
+            "Published_Date": "={{ $(\"Group Topic Pair\").item.json.li_msg ? $now.format('yyyy-MM-dd') : null }}"
+          },
+          "matchingColumns": []
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "id": "node-mark-li",
+      "name": "Mark LI Posted",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1000,
+        500
       ],
       "credentials": {
         "airtableTokenApi": {
@@ -208,45 +217,21 @@
       "main": [
         [
           {
-            "node": "Filter First Source",
+            "node": "Group Topic Pair",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Filter First Source": {
-      "main": [
-        [
-          {
-            "node": "Loop Through Scripts",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop Through Scripts": {
-      "main": [
-        [
-          {
-            "node": "Is Facebook?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Is Facebook?": {
+    "Group Topic Pair": {
       "main": [
         [
           {
             "node": "Post to Facebook",
             "type": "main",
             "index": 0
-          }
-        ],
-        [
+          },
           {
             "node": "Post to LinkedIn",
             "type": "main",
@@ -259,7 +244,7 @@
       "main": [
         [
           {
-            "node": "Mark Posted",
+            "node": "Mark FB Posted",
             "type": "main",
             "index": 0
           }
@@ -270,18 +255,7 @@
       "main": [
         [
           {
-            "node": "Mark Posted",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mark Posted": {
-      "main": [
-        [
-          {
-            "node": "Loop Through Scripts",
+            "node": "Mark LI Posted",
             "type": "main",
             "index": 0
           }
