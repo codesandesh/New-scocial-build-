@@ -1,19 +1,19 @@
 {
-  "name": "Stage 3 \u2013 Auto Post Facebook & LinkedIn",
+  "name": "Stage 3 – Auto Post Facebook & LinkedIn",
   "nodes": [
     {
       "parameters": {
         "rule": {
           "interval": [
             {
-              "field": "hours",
-              "hoursInterval": 1
+              "field": "minutes",
+              "minutesInterval": 1
             }
           ]
         }
       },
       "id": "node-manual",
-      "name": "Every 1 Hour",
+      "name": "Every 1 Minute",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -56,7 +56,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\n\nif (!items || items.length === 0) {\n  return [{ json: { _skip: true } }];\n}\n\nconst approved = items.filter(i => (i.json.Status || '').trim() === 'Approved');\n\nif (approved.length === 0) {\n  return [{ json: { _skip: true } }];\n}\n\n// Pick first group by Source_Content_ID\nlet targetId = null;\nfor (const i of approved) {\n  const sid = Array.isArray(i.json.Source_Content_ID)\n    ? i.json.Source_Content_ID[0]\n    : i.json.Source_Content_ID;\n  if (sid) { targetId = sid; break; }\n}\nif (!targetId) targetId = approved[0].json.id;\n\nconst group = approved.filter(i => {\n  const sid = Array.isArray(i.json.Source_Content_ID)\n    ? i.json.Source_Content_ID[0]\n    : i.json.Source_Content_ID;\n  return sid === targetId || (!sid && i.json.id === targetId);\n});\n\nreturn group.map(item => {\n  let plat = item.json['Target_Platforms '] || item.json['Target_Platforms'] || '';\n  if (Array.isArray(plat)) plat = plat.join(',');\n  plat = plat.toLowerCase();\n\n  const title = (item.json.Script_Title || '').toLowerCase();\n  let platform = 'linkedin';\n  if (plat.includes('face') || plat.includes('fb') || title.includes('facebook')) {\n    platform = 'facebook';\n  }\n\n  return {\n    json: {\n      ...item.json,\n      _target_platform: platform,\n      _airtable_id: item.json.id\n    }\n  };\n});"
+        "jsCode": "const items = $input.all();\n\nif (!items || items.length === 0) {\n  return [];\n}\n\nconst approved = items.filter(i => (i.json.Status || '').trim() === 'Approved');\n\nif (approved.length === 0) {\n  return [];\n}\n\n// 1. Pick the first valid Source_Content_ID among approved items\nlet targetSourceId = null;\nfor (const i of approved) {\n  const sid = Array.isArray(i.json.Source_Content_ID)\n    ? i.json.Source_Content_ID[0]\n    : i.json.Source_Content_ID;\n  if (sid) {\n    targetSourceId = sid;\n    break;\n  }\n}\n\n// If no Source_Content_ID, fall back to the first item's own ID\nif (!targetSourceId) targetSourceId = approved[0].json.id;\n\n// 2. Filter approved items down to ONLY those from this specific source\nconst group = approved.filter(i => {\n  const sid = Array.isArray(i.json.Source_Content_ID)\n    ? i.json.Source_Content_ID[0]\n    : i.json.Source_Content_ID;\n  return sid === targetSourceId || (!sid && i.json.id === targetSourceId);\n});\n\n// 3. Process ALL scripts for this source (multiple FB/LI scripts allowed)\nreturn group.map(item => {\n  let plat = item.json['Target_Platforms '] || item.json['Target_Platforms'] || '';\n  if (Array.isArray(plat)) plat = plat.join(',');\n  plat = plat.toLowerCase();\n\n  const title = (item.json.Script_Title || '').toLowerCase();\n  let platform = 'linkedin';\n  if (plat.includes('face') || plat.includes('fb') || title.includes('facebook')) {\n    platform = 'facebook';\n  }\n\n  return {\n    json: {\n      ...item.json,\n      _target_platform: platform,\n      _airtable_id: item.json.id\n    }\n  };\n});"
       },
       "id": "node-filter",
       "name": "Filter and Group",
@@ -137,6 +137,60 @@
     },
     {
       "parameters": {
+        "mode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "node-merge-fb",
+      "name": "Merge FB Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        1340,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "node-merge-li",
+      "name": "Merge LI Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        1340,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  return {\n    json: {\n      id: item.json._airtable_id,\n      Status: 'Posted',\n      Published_Date: new Date().toISOString().slice(0, 10)\n    }\n  };\n});"
+      },
+      "id": "node-set-fb",
+      "name": "Set FB Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  return {\n    json: {\n      id: item.json._airtable_id,\n      Status: 'Posted',\n      Published_Date: new Date().toISOString().slice(0, 10)\n    }\n  };\n});"
+      },
+      "id": "node-set-li",
+      "name": "Set LI Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        700
+      ]
+    },
+    {
+      "parameters": {
         "operation": "update",
         "base": {
           "__rl": true,
@@ -151,8 +205,8 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Status": "Posted",
-            "id": "={{ $('Filter and Group').item.json._airtable_id }}"
+            "Status": "={{ $json.Status }}",
+            "Published_Date": "={{ $json.Published_Date }}"
           },
           "matchingColumns": [
             "id"
@@ -167,7 +221,7 @@
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        1340,
+        1780,
         440
       ],
       "credentials": {
@@ -193,8 +247,8 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Status": "Posted",
-            "id": "={{ $('Filter and Group').item.json._airtable_id }}"
+            "Status": "={{ $json.Status }}",
+            "Published_Date": "={{ $json.Published_Date }}"
           },
           "matchingColumns": [
             "id"
@@ -209,7 +263,7 @@
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        1340,
+        1780,
         700
       ],
       "credentials": {
@@ -221,7 +275,7 @@
     }
   ],
   "connections": {
-    "Manual Trigger": {
+    "Every 1 Minute": {
       "main": [
         [
           {
@@ -261,6 +315,11 @@
             "node": "Post to Facebook",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge FB Data",
+            "type": "main",
+            "index": 1
           }
         ],
         [
@@ -268,11 +327,60 @@
             "node": "Post to LinkedIn",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge LI Data",
+            "type": "main",
+            "index": 1
           }
         ]
       ]
     },
     "Post to Facebook": {
+      "main": [
+        [
+          {
+            "node": "Merge FB Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Merge LI Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge FB Data": {
+      "main": [
+        [
+          {
+            "node": "Set FB Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge LI Data": {
+      "main": [
+        [
+          {
+            "node": "Set LI Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set FB Update": {
       "main": [
         [
           {
@@ -283,7 +391,7 @@
         ]
       ]
     },
-    "Post to LinkedIn": {
+    "Set LI Update": {
       "main": [
         [
           {
@@ -295,7 +403,7 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1"
   },

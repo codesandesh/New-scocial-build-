@@ -1,5 +1,5 @@
 {
-  "name": "Viral Pipeline \u2013 Stage 1 \u2013 Reddit AI/ML Discovery 2026",
+  "name": "Viral Pipeline – Stage 1 – Reddit AI/ML Discovery 2026",
   "nodes": [
     {
       "parameters": {
@@ -144,10 +144,10 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "Quick check: Is this Reddit post related to AI, machine learning, large language models, automation, computer vision, or emerging tech?\n\nTitle: {{ $json.title }}\nContent snippet: {{ $json.content.substring(0,900) }}\nSubreddit: {{ $json.subreddit }}\n\nReturn **only** clean JSON object \u2013 no markdown, no extra text:\n{\n  \"relevant\": true/false,\n  \"relevance_score\": 0\u2013100,\n  \"viral_potential\": 0\u2013100\n}"
+        "text": "Quick check: Is this Reddit post related to AI, machine learning, large language models, automation, computer vision, or emerging tech?\n\nTitle: {{ $json.title }}\nContent snippet: {{ $json.content.substring(0,900) }}\nSubreddit: {{ $json.subreddit }}\n\nReturn **only** clean JSON object – no markdown, no extra text:\n{\n  \"relevant\": true/false,\n  \"relevance_score\": 0–100,\n  \"viral_potential\": 0–100\n}"
       },
       "id": "gemini-filter",
-      "name": "Gemini \u2013 Relevance Check",
+      "name": "Gemini – Relevance Check",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
@@ -249,7 +249,18 @@
     }
   ],
   "connections": {
-    "Every 12 hours": {
+    "every-day-6am": {
+      "main": [
+        [
+          {
+            "node": "Every Day 6AM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Day 6AM": {
       "main": [
         [
           {
@@ -337,14 +348,14 @@
       "main": [
         [
           {
-            "node": "Gemini \u2013 Relevance Check",
+            "node": "Gemini – Relevance Check",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini \u2013 Relevance Check": {
+    "Gemini – Relevance Check": {
       "main": [
         [
           {
@@ -378,16 +389,13 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "timezone": "UTC"
   },
-  "versionId": "stage1-final-v3-2026-02-27",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "a7f9d2e1-4b3c-4e8a-9f1d-6c8e2b5f3a1d"
+    "templateCredsSetupCompleted": true
   },
-  "id": "viral-stage1-reddit-2026",
   "tags": []
 }

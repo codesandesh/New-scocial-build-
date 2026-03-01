@@ -1,5 +1,5 @@
 {
-  "name": "Viral Pipeline \u2013 Stage 2 \u2013 Script Generation 2026",
+  "name": "Viral Pipeline – Stage 2 – Script Generation 2026",
   "nodes": [
     {
       "parameters": {
@@ -23,106 +23,112 @@
     },
     {
       "parameters": {
-        "operation": "list",
+        "operation": "search",
         "base": {
           "__rl": true,
-          "value": "={{ $env.AIRTABLE_BASE_ID }}",
-          "mode": "id"
+          "value": "appvFfyAXIMqyHsRg",
+          "mode": "list",
+          "cachedResultName": "Viral Content Factory",
+          "cachedResultUrl": "https://airtable.com/appvFfyAXIMqyHsRg"
         },
         "table": {
           "__rl": true,
-          "value": "={{ $env.AT_VIRAL_CONTENT_TABLE }}",
-          "mode": "id"
+          "value": "tblexeHTYqlzH5JuR",
+          "mode": "list",
+          "cachedResultName": "Viral Content Database",
+          "cachedResultUrl": "https://airtable.com/appvFfyAXIMqyHsRg/tblexeHTYqlzH5JuR"
         },
-        "options": {
-          "filterByFormula": "{Status} = 'Generate Script'",
-          "maxRecords": 15
-        }
+        "filterByFormula": "{Status} = 'Generate Script'",
+        "options": {}
       },
       "id": "read-pending",
       "name": "Find Posts to Script",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        460,
+        464,
         400
       ],
       "credentials": {
         "airtableTokenApi": {
-          "id": "airtable-pat-2026-placeholder",
-          "name": "Airtable PAT"
+          "id": "KfoaxgkR8RCgNbNi",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "You are Ujjwal Roy, 32-year-old AI founder & CEO (ScaleBuild AI).\nWrite concise, confident, opinionated first-person post (max 90 words, 2 short paragraphs max).\nStart with strong, non-generic hook.\nAvoid buzzwords and filler.\nNews: Title: {{ $json.Name }}\nContent: {{ $json.Content }}\nSubreddit: {{ $json.Subreddit }}\nUpvotes: {{ $json.Likes }}\n\nReturn ONLY valid JSON \u2013 no markdown:\n{\n  \"platform\": \"LinkedIn\",\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"body\": \"...\",\n  \"cta\": \"...\"\n}"
+        "text": "Context and Author Profile:\nUjjwal Roy is the CEO of ScaleBuild AI, a custom AI software development company specializing in workflow automation, customer-facing tools, and AI model development. He also serves as CEO of Seethos AI (computer vision for manufacturing), Chair of IEEE Young Professionals, and founding president of the World AI Alliance. His background spans engineering roles at Intel, Micron, and IBM, as well as Wall Street finance. He is 32 years old.\n\nTask:\nRewrite the following news content as an original thought leadership post for Ujjwal's LinkedIn.\n\nNews Input:\nTitle: {{ $json.Name || 'New Technology Insight' }}\nContent: {{ $json.Content || 'No details provided.' }}\nSubreddit: {{ $json.Subreddit || 'N/A' }}\nUpvotes: {{ $json.Likes || 0 }}\n\nTone and Voice Guidelines:\n- Direct and to the point. No fluff, no filler, no softening language. Say what you mean.\n- Position Ujjwal as a credible, forward-thinking voice in the AI industry who interprets what news means for the broader landscape\n- Reflect the perspective of a hands-on AI CEO who builds real products, not a passive observer\n- Confident and opinionated, but grounded with reasoning or real-world parallels\n- Conversational and punchy, not corporate or formal. Write like a 32-year-old founder talking to peers.\n- Avoid generic AI hype or surface-level commentary. Go deeper with strategic insight or contrarian angles.\n- The output must read like a real human wrote it. Use natural sentence rhythms, occasional imperfect phrasing, and varied sentence lengths. Avoid patterns that feel templated, overly polished, or AI-generated. No perfectly balanced sentence structures. No formulaic transitions. Write the way a smart, busy founder actually talks online.\n\nStructure and Length (STRICT):\n- Maximum two short paragraphs. No exceptions. Each paragraph should be 2 to 4 sentences.\n- Total word count: 50 to 100 words. Treat this as a hard ceiling.\n- The opening sentence must be a strong, creative hook. Not generic, not clickbait. It should be a sharp, original observation or a surprising reframe that makes people stop scrolling. Think of the kind of opener that makes someone say I never thought of it that way.\n- Close with a perspective, prediction, or question that invites engagement\n- Distill the news down to the single most important insight and build the entire post around that one idea. Cut everything else ruthlessly.\n- No bullet points, no numbered lists, no headers\n\nFormatting Rules:\n- Never use em dashes anywhere in the output. Use commas, periods, parentheses, or restructure the sentence instead.\n- No ellipses for dramatic effect\n- No hashtags unless specifically requested\n\nWhat to Avoid:\n- Do not summarize the full news story. Extract only the sharpest takeaway.\n- Do not use buzzwords without substance (e.g., revolutionary, game-changing)\n- Do not write in third person. Write as Ujjwal in first person.\n- Do not pad with filler sentences or repeat the same idea in different words\n- Do not use phrases that are commonly associated with AI-generated content (e.g., Lets dive in, Heres the thing, In todays rapidly evolving landscape, Its not just about X its about Y)\n- Do not open with a question as the hook. Lead with a statement.\n\nReturn ONLY valid JSON, no markdown:\n{\n  \"platform\": \"LinkedIn\",\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"body\": \"...\",\n  \"cta\": \"...\"\n}",
+        "batching": {}
       },
       "id": "gemini-linkedin",
-      "name": "Gemini \u2013 LinkedIn Script",
+      "name": "Gemini – LinkedIn Script",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        680,
-        340
+        640,
+        304
       ]
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "You are Ujjwal Roy, 32-year-old AI founder & CEO.\nWrite direct, conversational first-person post for Facebook (max 90 words, 2 paragraphs).\nStrong hook first.\nNews: Title: {{ $json.Name }}\nContent: {{ $json.Content }}\nSubreddit: {{ $json.Subreddit }}\nUpvotes: {{ $json.Likes }}\n\nReturn ONLY valid JSON \u2013 no markdown:\n{\n  \"platform\": \"Facebook\",\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"body\": \"...\",\n  \"cta\": \"...\"\n}"
+        "text": "Context and Author Profile:\nUjjwal Roy is the CEO of ScaleBuild AI, a custom AI software development company specializing in workflow automation, customer-facing tools, and AI model development. He also serves as CEO of Seethos AI (computer vision for manufacturing), Chair of IEEE Young Professionals, and founding president of the World AI Alliance. His background spans engineering roles at Intel, Micron, and IBM, as well as Wall Street finance. He is 32 years old.\n\nTask:\nRewrite the following news content as an original thought leadership post for Ujjwal's Facebook.\n\nNews Input:\nTitle: {{ $json.Name || 'New Technology Insight' }}\nContent: {{ $json.Content || 'No details provided.' }}\nSubreddit: {{ $json.Subreddit || 'N/A' }}\nUpvotes: {{ $json.Likes || 0 }}\n\nTone and Voice Guidelines:\n- Direct and to the point. No fluff, no filler, no softening language. Say what you mean.\n- Position Ujjwal as a credible, forward-thinking voice in the AI industry who interprets what news means for the broader landscape\n- Reflect the perspective of a hands-on AI CEO who builds real products, not a passive observer\n- Confident and opinionated, but grounded with reasoning or real-world parallels\n- Conversational and punchy, not corporate or formal. Write like a 32-year-old founder talking to peers.\n- Avoid generic AI hype or surface-level commentary. Go deeper with strategic insight or contrarian angles.\n- The output must read like a real human wrote it. Use natural sentence rhythms, occasional imperfect phrasing, and varied sentence lengths. Avoid patterns that feel templated, overly polished, or AI-generated. No perfectly balanced sentence structures. No formulaic transitions. Write the way a smart, busy founder actually talks online.\n\nStructure and Length (STRICT):\n- Maximum two short paragraphs. No exceptions. Each paragraph should be 2 to 4 sentences.\n- Total word count: 50 to 100 words. Treat this as a hard ceiling.\n- The opening sentence must be a strong, creative hook. Not generic, not clickbait. It should be a sharp, original observation or a surprising reframe that makes people stop scrolling. Think of the kind of opener that makes someone say I never thought of it that way.\n- Close with a perspective, prediction, or question that invites engagement\n- Distill the news down to the single most important insight and build the entire post around that one idea. Cut everything else ruthlessly.\n- No bullet points, no numbered lists, no headers\n\nFormatting Rules:\n- Never use em dashes anywhere in the output. Use commas, periods, parentheses, or restructure the sentence instead.\n- No ellipses for dramatic effect\n- No hashtags unless specifically requested\n\nWhat to Avoid:\n- Do not summarize the full news story. Extract only the sharpest takeaway.\n- Do not use buzzwords without substance (e.g., revolutionary, game-changing)\n- Do not write in third person. Write as Ujjwal in first person.\n- Do not pad with filler sentences or repeat the same idea in different words\n- Do not use phrases that are commonly associated with AI-generated content (e.g., Lets dive in, Heres the thing, In todays rapidly evolving landscape, Its not just about X its about Y)\n- Do not open with a question as the hook. Lead with a statement.\n\nReturn ONLY valid JSON, no markdown:\n{\n  \"platform\": \"Facebook\",\n  \"title\": \"...\",\n  \"hook\": \"...\",\n  \"body\": \"...\",\n  \"cta\": \"...\"\n}",
+        "batching": {}
       },
       "id": "gemini-facebook",
-      "name": "Gemini \u2013 Facebook Script",
+      "name": "Gemini – Facebook Script",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        680,
-        500
+        608,
+        624
       ]
     },
     {
       "parameters": {
-        "mode": "mergeByPosition"
+        "mode": "append"
       },
       "id": "merge-gemini",
       "name": "Merge Both Scripts",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2.1,
       "position": [
-        900,
-        420
+        976,
+        384
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "options": {}
+      },
       "id": "gemini-model",
       "name": "Gemini Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        900,
-        580
+        704,
+        496
       ],
       "credentials": {
         "googlePalmApi": {
-          "id": "gemini-cred-2026-placeholder",
-          "name": "Google Gemini API Key"
+          "id": "gZWxtPDhc4VC9XNF",
+          "name": "Google Gemini(PaLM) Api account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "const results = [];\n\nfor (const item of $input.all()) {\n  let raw = item.json.text || item.json.output || '{}';\n  let parsed = {};\n  try {\n    parsed = JSON.parse(raw);\n  } catch (e) {\n    const match = raw.match(/\\{[^]*\\}/);\n    if (match) {\n      try { parsed = JSON.parse(match[0]); } catch {}\n    }\n  }\n\n  if (!parsed.title || !parsed.platform) continue;\n\n  const sourceRecord = $(\"Find Posts to Script\").first()?.json || {};\n\n  results.push({\n    json: {\n      Name: parsed.title,\n      Source_Content: [sourceRecord.id || sourceRecord.Name || ''],\n      Platform: parsed.platform,\n      Hook: parsed.hook || '',\n      Body: parsed.body || '',\n      CTA: parsed.cta || '',\n      Status: 'Draft',\n      Created_Date: $now.format('yyyy-MM-dd')\n    }\n  });\n}\n\nreturn results.length > 0 ? results : [{ json: { _skip: true } }];"
+        "jsCode": "const results = [];\nconst rawInputs = $input.all();\nconst sourceItems = $(\"Find Posts to Script\").all();\nconst sourceCount = sourceItems.length;\n\nif (sourceCount === 0) return [{ json: { _skip: true } }];\n\nfor (let i = 0; i < rawInputs.length; i++) {\n  const item = rawInputs[i];\n  let raw = item.json.text || item.json.output || '{}';\n  let parsed = {};\n  try {\n    parsed = JSON.parse(raw);\n  } catch (e) {\n    const match = raw.match(/\\{[^]*\\}/);\n    if (match) {\n      try { parsed = JSON.parse(match[0]); } catch {}\n    }\n  }\n\n  // Calculate which source record this script corresponds to.\n  const sourceIndex = i % sourceCount;\n  const sourceRecord = sourceItems[sourceIndex]?.json || {};\n\n  // RESILIENT MAPPING: Use fallbacks for all critical fields to avoid skipping scripts\n  const title = parsed.title || parsed.Name || sourceRecord.Name || 'Untitled Script';\n  const platform = parsed.platform || parsed.Target_Platforms || (i < sourceCount ? 'LinkedIn' : 'Facebook');\n\n  results.push({\n    json: {\n      Name: title,\n      Source_Content_ID: sourceRecord.id || sourceRecord.Name || '',\n      Script_Title: title,\n      Target_Platforms: platform,\n      Hook: parsed.hook || '',\n      Main_Content: parsed.body || '',\n      CTA: parsed.cta || '',\n      Status: 'Draft',\n      Created_Date: new Date().toISOString().slice(0, 10)\n    }\n  });\n}\n\nreturn results.length > 0 ? results : [{ json: { _skip: true } }];"
       },
       "id": "parse-scripts",
       "name": "Parse & Prepare Scripts",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1120,
-        420
+        1136,
+        400
       ]
     },
     {
@@ -130,23 +136,24 @@
         "operation": "create",
         "base": {
           "__rl": true,
-          "value": "={{ $env.AIRTABLE_BASE_ID }}",
+          "value": "appvFfyAXIMqyHsRg",
           "mode": "id"
         },
         "table": {
           "__rl": true,
-          "value": "={{ $env.AT_SCRIPT_LIBRARY_TABLE }}",
+          "value": "={{ $env.AT_TABLE_SCRIPT_LIB }}",
           "mode": "id"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
             "Name": "={{ $json.Name }}",
-            "Source_Content": "={{ $json.Source_Content }}",
-            "Platform": "={{ $json.Platform }}",
+            "Source_Content_ID": "={{ $json.Source_Content_ID }}",
+            "Script_Title": "={{ $json.Script_Title }}",
+            "Target_Platforms ": "={{ $json.Target_Platforms }}",
             "Hook": "={{ $json.Hook }}",
-            "Body": "={{ $json.Body }}",
-            "CTA": "={{ $json.CTA }}",
+            "Main_Content": "={{ $json.Main_Content }}",
+            "CTA ": "={{ $json.CTA }}",
             "Status": "={{ $json.Status }}",
             "Created_Date": "={{ $json.Created_Date }}"
           }
@@ -160,19 +167,20 @@
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        1340,
-        420
+        1344,
+        432
       ],
       "credentials": {
         "airtableTokenApi": {
-          "id": "airtable-pat-2026-placeholder",
-          "name": "Airtable PAT"
+          "id": "KfoaxgkR8RCgNbNi",
+          "name": "Airtable Personal Access Token account"
         }
       }
     }
   ],
+  "pinData": {},
   "connections": {
-    "Every 4 hours": {
+    "Every Day 8AM": {
       "main": [
         [
           {
@@ -187,19 +195,35 @@
       "main": [
         [
           {
-            "node": "Gemini \u2013 LinkedIn Script",
+            "node": "Gemini – LinkedIn Script",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Gemini \u2013 Facebook Script",
+            "node": "Gemini – Facebook Script",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini \u2013 LinkedIn Script": {
+    "Gemini Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gemini – LinkedIn Script",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Gemini – Facebook Script",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini – LinkedIn Script": {
       "main": [
         [
           {
@@ -210,13 +234,13 @@
         ]
       ]
     },
-    "Gemini \u2013 Facebook Script": {
+    "Gemini – Facebook Script": {
       "main": [
         [
           {
             "node": "Merge Both Scripts",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -244,16 +268,14 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "timezone": "UTC"
   },
-  "versionId": "stage2-final-v1-2026-02-27",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "b8e1c3f2-5d4a-4f9b-8c2e-7d9f3a6e4b2c"
+    "instanceId": "59f8cb346b5d8766759dae082492ff78f5a0d022521aa8125464caad6f9a6bc3"
   },
-  "id": "viral-stage2-scripts-2026",
   "tags": []
 }

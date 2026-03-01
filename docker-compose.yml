@@ -13,6 +13,8 @@ services:
       - N8N_PROTOCOL=${N8N_PROTOCOL}
       - N8N_HOST=${N8N_HOST}
       - N8N_PORT=${N8N_PORT}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - N8N_EDITOR_BASE_URL=${N8N_EDITOR_BASE_URL}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       - N8N_LOG_LEVEL=${N8N_LOG_LEVEL:-info}
       - N8N_LOG_OUTPUT=console
@@ -23,7 +25,7 @@ services:
       - NODES_EXCLUDE=[]
 
       # Auto-restore credentials on every startup (survives docker compose down/up)
-      - N8N_CREDENTIALS_OVERWRITE_DATA={"airtableTokenApi":{"accessToken":"${AIRTABLE_PAT}"},"googlePalmApi":{"apiKey":"${GOOGLE_API_KEY}"},"linkedInOAuth2Api":{"clientId":"${LINKEDIN_CLIENT_ID}","clientSecret":"${LINKEDIN_CLIENT_SECRET}"}}
+      - N8N_CREDENTIALS_OVERWRITE_DATA=${N8N_CREDENTIALS_OVERWRITE_DATA}
 
       # Execution
       - EXECUTIONS_MODE=queue
