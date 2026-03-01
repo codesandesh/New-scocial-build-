@@ -56,12 +56,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nif (!items || items.length === 0) return [];\n\nconst approved = items.filter(i => (i.json.Status || '').trim() === 'Approved');\nif (approved.length === 0) return [];\n\nlet targetSourceId = null;\nfor (const i of approved) {\n  const sid = Array.isArray(i.json.Source_Content_ID) ? i.json.Source_Content_ID[0] : i.json.Source_Content_ID;\n  if (sid) { targetSourceId = sid; break; }\n}\nif (!targetSourceId) targetSourceId = approved[0].json.id;\n\nconst group = approved.filter(i => {\n  const sid = Array.isArray(i.json.Source_Content_ID) ? i.json.Source_Content_ID[0] : i.json.Source_Content_ID;\n  return sid === targetSourceId || (!sid && i.json.id === targetSourceId);\n});\n\nreturn group.map(item => {\n  let plat = item.json['Target_Platforms '] || item.json['Target_Platforms'] || '';\n  if (Array.isArray(plat)) plat = plat.join(',');\n  plat = plat.toLowerCase();\n\n  const title = (item.json.Script_Title || '').toLowerCase();\n  let platform = 'linkedin';\n  if (plat.includes('face') || plat.includes('fb') || title.includes('facebook')) {\n    platform = 'facebook';\n  }\n\n  return {\n    json: {\n      ...item.json,\n      _target_platform: platform,\n      _airtable_id: item.json.id\n    }\n  };\n});"
+        "jsCode": "/* Process only ONE original source content at a time - RESTORED TO APPROVED ONLY */\nconst items = $input.all();\nif (!items || items.length === 0) return [];\n\nconst approved = items.filter(i => (i.json.Status || '').trim() === 'Approved');\nif (approved.length === 0) return [];\n\n// 1. Identify the first Source ID in the list\nlet targetSourceId = null;\nfor (const i of approved) {\n  const sid = Array.isArray(i.json.Source_Content_ID) ? i.json.Source_Content_ID[0] : i.json.Source_Content_ID;\n  if (sid) { targetSourceId = sid; break; }\n}\n\n// Fallback if no Source_Content_ID is linked\nif (!targetSourceId) targetSourceId = approved[0].json.id;\n\n// 2. Filter for only items belonging to that specific source\nconst group = approved.filter(i => {\n  const sid = Array.isArray(i.json.Source_Content_ID) ? i.json.Source_Content_ID[0] : i.json.Source_Content_ID;\n  return sid === targetSourceId || (!sid && i.json.id === targetSourceId);\n});\n\nreturn group.map(item => {\n  let plat = item.json['Target_Platforms '] || item.json['Target_Platforms'] || '';\n  if (Array.isArray(plat)) plat = plat.join(',');\n  plat = (plat || '').toLowerCase();\n\n  const title = (item.json.Script_Title || '').toLowerCase();\n  let platform = 'linkedin';\n  if (plat.includes('face') || plat.includes('fb') || title.includes('facebook')) {\n    platform = 'facebook';\n  }\n\n  return {\n    json: {\n      ...item.json,\n      _target_platform: platform\n    }\n  };\n});"
       },
       "id": "node-filter",
       "name": "Filter and Group",
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "typeVersion": 1,
       "position": [
         680,
         560
@@ -137,12 +137,13 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst originals = $items(\"Is Facebook?\", 0);\n\nreturn items.map((item, index) => {\n  const original = originals[index];\n  return {\n    json: {\n      /* The Airtable internal Record ID */\n      id: original.json._airtable_id,\n      Status: 'Posted',\n      Published_Date: new Date().toISOString().slice(0, 10)\n    }\n  };\n});"
+        "mode": "combine",
+        "combinationMode": "mergeByPosition"
       },
-      "id": "node-set-fb",
-      "name": "Set FB Update",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "node-merge-fb",
+      "name": "Merge FB Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
       "position": [
         1380,
         440
@@ -150,12 +151,13 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst originals = $items(\"Is Facebook?\", 1);\n\nreturn items.map((item, index) => {\n  const original = originals[index];\n  return {\n    json: {\n      /* The Airtable internal Record ID */\n      id: original.json._airtable_id,\n      Status: 'Posted',\n      Published_Date: new Date().toISOString().slice(0, 10)\n    }\n  };\n});"
+        "mode": "combine",
+        "combinationMode": "mergeByPosition"
       },
-      "id": "node-set-li",
-      "name": "Set LI Update",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "node-merge-li",
+      "name": "Merge LI Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
       "position": [
         1380,
         700
@@ -178,8 +180,8 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Status": "={{ $json.Status }}",
-            "Published_Date": "={{ $json.Published_Date }}"
+            "Status": "Posted",
+            "Published_Date": "={{ $now.format('yyyy-MM-dd') }}"
           },
           "matchingColumns": []
         },
@@ -219,8 +221,8 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Status": "={{ $json.Status }}",
-            "Published_Date": "={{ $json.Published_Date }}"
+            "Status": "Posted",
+            "Published_Date": "={{ $now.format('yyyy-MM-dd') }}"
           },
           "matchingColumns": []
         },
@@ -285,6 +287,11 @@
             "node": "Post to Facebook",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge FB Data",
+            "type": "main",
+            "index": 1
           }
         ],
         [
@@ -292,6 +299,11 @@
             "node": "Post to LinkedIn",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge LI Data",
+            "type": "main",
+            "index": 1
           }
         ]
       ]
@@ -300,7 +312,7 @@
       "main": [
         [
           {
-            "node": "Set FB Update",
+            "node": "Merge FB Data",
             "type": "main",
             "index": 0
           }
@@ -311,14 +323,14 @@
       "main": [
         [
           {
-            "node": "Set LI Update",
+            "node": "Merge LI Data",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Set FB Update": {
+    "Merge FB Data": {
       "main": [
         [
           {
@@ -329,7 +341,7 @@
         ]
       ]
     },
-    "Set LI Update": {
+    "Merge LI Data": {
       "main": [
         [
           {
