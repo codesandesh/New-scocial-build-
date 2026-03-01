@@ -1,38 +1,48 @@
 {
-  "id": "2tMOtUgrgm3wgbZD",
-  "name": "Viral Pipeline – Stage 1 – Reddit AI/ML Discovery 2026",
+  "name": "Stage 1 - Content Discovery",
   "nodes": [
+    {
+      "parameters": {},
+      "id": "node-1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        208,
+        400
+      ]
+    },
     {
       "parameters": {
         "rule": {
           "interval": [
             {
-              "field": "cronExpression",
-              "expression": "0 6 * * *"
+              "field": "hours",
+              "hoursInterval": 12
             }
           ]
         }
       },
-      "id": "stage1-trigger",
-      "name": "Every Day 6AM",
+      "id": "node-2",
+      "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        240,
-        300
+        208,
+        240
       ]
     },
     {
       "parameters": {
-        "jsCode": "const subreddits = ['MachineLearning', 'Artificial', 'OpenAI', 'ChatGPT', 'ArtificialIntelligence', 'DeepLearning', 'AGI', 'technology', 'technews', 'Gadgets', 'Futurology', 'Computing', 'learnmachinelearning', 'datascience', 'programming'];\nconst urls = subreddits.map(sub => ({\n  url: `https://www.reddit.com/r/${sub}/top.json?t=day&limit=10`\n}));\nreturn [{ json: { startUrls: urls } }];"
+        "jsCode": "const subreddits = [\n  'Artificial',\n  'ArtificialInteligence',\n  'OpenAI',\n  'MachineLearning',\n  'singularity'\n];\n\nconst startUrls = [];\nfor (const sub of subreddits) {\n  startUrls.push({ url: `https://www.reddit.com/r/${sub}/top.json?t=day&limit=10` });\n}\n\nreturn [{ json: { startUrls } }];"
       },
-      "id": "generate-urls",
-      "name": "Generate Reddit JSON URLs",
+      "id": "node-3",
+      "name": "Generate Reddit URLs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        460,
-        300
+        448,
+        400
       ]
     },
     {
@@ -50,50 +60,46 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ startUrls: $json.startUrls, maxItems: 150, skipComments: true, maxPostCount: 10, proxy: { useApifyProxy: true } }) }}",
-        "options": {
-          "timeout": 60000
-        }
+        "jsonBody": "={{ JSON.stringify({ startUrls: $json.startUrls, maxItems: 50, skipComments: true, maxComments: 0, maxCommunitiesCount: 5, maxPostCount: 10, proxy: { useApifyProxy: true } }) }}",
+        "options": {}
       },
-      "id": "start-apify",
-      "name": "Start Apify Reddit Scraper",
+      "id": "node-4",
+      "name": "Start Reddit Scraper",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "typeVersion": 4.1,
       "position": [
-        680,
-        300
+        672,
+        400
       ],
-      "onError": "continue"
+      "onError": "continueRegular"
     },
     {
       "parameters": {
-        "amount": 60
+        "amount": 30
       },
-      "id": "wait-apify",
-      "name": "Wait 60 seconds",
+      "id": "node-wait-reddit",
+      "name": "Wait 30s",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        900,
-        300
-      ]
+        864,
+        400
+      ],
+      "webhookId": "f4f02128-d98c-4da9-b432-3d8a51379b3f"
     },
     {
       "parameters": {
-        "url": "=https://api.apify.com/v2/actor-runs/{{ $node[\"Start Apify Reddit Scraper\"].json[\"data\"][\"id\"] }}?token={{ $env.APIFY_API_TOKEN }}",
-        "options": {
-          "timeout": 30000
-        }
+        "url": "=https://api.apify.com/v2/actor-runs/{{ $node[\"Start Reddit Scraper\"].json.data.id }}?token={{ $env.APIFY_API_TOKEN }}",
+        "options": {}
       },
-      "id": "check-status",
+      "id": "node-check-status-reddit",
       "name": "Check Scraper Status",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "typeVersion": 4.1,
       "position": [
-        1120,
-        300
-      ],
-      "onError": "continue"
+        1040,
+        400
+      ]
     },
     {
       "parameters": {
@@ -106,97 +112,117 @@
           ]
         }
       },
-      "id": "if-succeeded",
-      "name": "Run Succeeded?",
+      "id": "node-is-finished-reddit",
+      "name": "Is Scraper Finished?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        1340,
-        300
+        1216,
+        400
       ]
     },
     {
       "parameters": {
-        "url": "=https://api.apify.com/v2/datasets/{{ $json[\"Check Scraper Status\"].json[\"data\"][\"defaultDatasetId\"] }}/items?token={{ $env.APIFY_API_TOKEN }}&limit=150"
+        "url": "=https://api.apify.com/v2/datasets/{{ $node[\"Check Scraper Status\"].json.data.defaultDatasetId }}/items?token={{ $env.APIFY_API_TOKEN }}",
+        "options": {}
       },
-      "id": "fetch-dataset",
-      "name": "Fetch Dataset Items",
+      "id": "node-fetch-results-reddit",
+      "name": "Fetch Scraper Results",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "typeVersion": 4.1,
       "position": [
-        1560,
-        220
-      ],
-      "onError": "continue"
+        1408,
+        400
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const seenIds = new Set();\nconst posts = [];\n\nfor (const item of $input.all()) {\n  let records = Array.isArray(item.json) ? item.json : [item.json];\n  for (const post of records) {\n    if (!post || post.dataType !== 'post') continue;\n    const id = post.id || post.postId;\n    if (seenIds.has(id)) continue;\n    seenIds.add(id);\n\n    posts.push({\n      json: {\n        title: (post.title || '').trim(),\n        content: ((post.title || '') + '\\n\\n' + (post.selftext || post.body || '')).trim().substring(0, 1400),\n        post_id: id,\n        url: post.permalink ? `https://reddit.com${post.permalink.startsWith('/') ? post.permalink : '/' + post.permalink}` : post.url || '',\n        likes: post.ups || post.score || 0,\n        comments: post.num_comments || 0,\n        subreddit: post.subreddit || post.communityName?.replace('r/', '') || 'unknown',\n        created_utc: post.created_utc || post.createdAt || null\n      }\n    });\n  }\n}\n\nreturn posts.length > 0 ? posts : [{ json: { _skip: true, reason: 'no valid posts' } }];"
+        "jsCode": "// Only filter by dataType=post — pass everything else through\nconst items = $input.all();\nconst processed = [];\nconst seenIds = new Set();\n\nfor (const item of items) {\n  let data = item.json || {};\n  const records = Array.isArray(data) ? data : [data];\n\n  for (const post of records) {\n    if (!post) continue;\n    if (post.dataType !== 'post') continue;\n\n    const postId = post.id || post.postId || '';\n    if (seenIds.has(postId)) continue;\n    seenIds.add(postId);\n\n    const title = post.title || '';\n    const body = post.body || post.selftext || '';\n    const content = title + (body ? '\\n\\n' + body : '');\n    const upvotes = post.upVotes || post.ups || post.score || 0;\n    const comments = post.numberOfComments || post.num_comments || post.commentsCount || 0;\n    const category = post.category || post.communityName?.replace('r/', '') || 'tech';\n    const isLinkPost = post.url && !post.url.includes('reddit.com') && !post.url.includes('redd.it');\n    const redditThreadUrl = post.permalink\n      ? (post.permalink.startsWith('http') ? post.permalink : 'https://reddit.com' + post.permalink)\n      : (post.url || `https://reddit.com/r/${category}`);\n    const externalUrl = isLinkPost ? post.url : redditThreadUrl;\n\n    processed.push({\n      json: {\n        post_id: postId,\n        platform: 'Reddit',\n        title: title,\n        content: content.substring(0, 1500),\n        body: body.substring(0, 800),\n        url: redditThreadUrl,\n        external_url: externalUrl,\n        is_news_link: isLinkPost || false,\n        domain: post.domain || 'reddit.com',\n        likes: upvotes,\n        comments: comments,\n        views: upvotes + comments,\n        engagement_score: upvotes + (comments * 2),\n        engagement_rate: ((upvotes / Math.max(upvotes + comments, 1)) * 100).toFixed(2),\n        category: category,\n        community_name: post.communityName || 'Reddit',\n        author: post.username || post.author || 'anon',\n        created_at: post.createdAt || post.created_utc || new Date().toISOString(),\n        data_type: post.dataType\n      }\n    });\n  }\n}\n\nconsole.log(`✅ Found ${processed.length} posts (dataType=post only)`);\nreturn processed.length > 0 ? processed : [{ json: { _skip: true, platform: 'Reddit', reason: 'No posts found' } }];"
       },
-      "id": "parse-posts",
-      "name": "Parse & Deduplicate Posts",
+      "id": "node-5",
+      "name": "Parse Reddit Posts (News Only)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1780,
-        220
+        880,
+        400
+      ],
+      "onError": "continueRegular"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pass through ALL items — no filtering\nreturn $input.all();"
+      },
+      "id": "node-6",
+      "name": "Remove Empty Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        400
       ]
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "Quick check: Is this Reddit post related to AI, machine learning, large language models, automation, computer vision, or emerging tech?\n\nTitle: {{ $json.title }}\nContent snippet: {{ $json.content.substring(0,900) }}\nSubreddit: {{ $json.subreddit }}\n\nReturn **only** clean JSON object – no markdown, no extra text:\n{\n  \"relevant\": true/false,\n  \"relevance_score\": 0–100,\n  \"viral_potential\": 0–100\n}"
+        "text": "Analyze this Reddit post for viral potential and AI/ML/Tech relevance.\n\nTitle: {{ $json.title }}\nSubreddit: {{ $json.category }}\nUpvotes: {{ $json.likes }}\nComments: {{ $json.comments }}\nDomain: {{ $json.domain }}\nBody: {{ $json.body }}\n\nReturn ONLY a valid JSON object (no markdown, no backticks, no explanation) with these exact fields:\n{\"Viral_Score\": 0-100, \"Hook_Pattern\": \"pattern type\", \"Content_Structure\": \"breaking news or research paper or product launch or opinion or tutorial or controversy\", \"Emotional_Triggers\": \"emotions driving engagement\", \"Viral_Elements\": \"what makes it spread\", \"Script_Framework\": \"framework used\", \"is_ai_ml_tech\": true or false, \"news_relevance\": 0-100}",
+        "batching": {
+          "batchSize": 1
+        }
       },
-      "id": "gemini-filter",
-      "name": "Gemini – Relevance Check",
+      "id": "node-7",
+      "name": "Gemini Analyze News Post",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2000,
-        220
-      ]
+        1296,
+        400
+      ],
+      "onError": "continueRegular"
     },
     {
-      "parameters": {},
-      "id": "gemini-model",
+      "parameters": {
+        "options": {}
+      },
+      "id": "node-8",
       "name": "Gemini Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        2000,
-        380
+        1296,
+        560
       ],
       "credentials": {
         "googlePalmApi": {
-          "id": "gemini-cred-2026-placeholder",
-          "name": "Google Gemini API Key"
+          "id": "vbhLIH8I52VXHFtc",
+          "name": "Google Gemini(PaLM) Api account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "const geminiResp = $input.first()?.json?.text || '{}';\nlet analysis = {};\ntry {\n  analysis = JSON.parse(geminiResp);\n} catch (e) {\n  try {\n    const match = geminiResp.match(/\\{[^]*\\}/);\n    if (match) analysis = JSON.parse(match[0]);\n  } catch {}\n}\n\nconst original = $input.all()[0]?.json || {};\n\nif (original._skip) return [{ json: original }];\n\nreturn [{\n  json: {\n    ...original,\n    is_relevant: analysis.relevant === true,\n    relevance_score: Number(analysis.relevance_score) || 0,\n    viral_potential: Number(analysis.viral_potential) || 0\n  }\n}];"
+        "jsCode": "// Build Airtable-ready output: original post data + Gemini analysis\n// Get original items from the Remove Empty Items node\nlet originals = [];\ntry { originals = $items('Remove Empty Items'); } catch(e) { originals = []; }\nconst geminiItems = $input.all();\nconst output = [];\n\nfor (let i = 0; i < geminiItems.length; i++) {\n  const gemini = geminiItems[i].json || {};\n  const orig = originals[i]?.json || {};\n\n  // Parse Gemini text response into JSON\n  const rawText = gemini.text || gemini.output || '{}';\n  let ai = {};\n  try {\n    ai = JSON.parse(rawText);\n  } catch (e) {\n    const match = rawText.match(/\\{[\\s\\S]*\\}/);\n    if (match) {\n      try { ai = JSON.parse(match[0]); } catch (e2) {}\n    }\n  }\n\n  const s = (v) => (v === undefined || v === null) ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v));\n  const title = orig.title || '';\n  const body = orig.body || '';\n\n  // Output fields matching Airtable Viral Content DB schema exactly\n  output.push({\n    json: {\n      Name: title.substring(0, 100),\n      Post_ID: orig.post_id || '',\n      Platform: orig.platform || 'Reddit',\n      Post_URL: orig.url || '',\n      Content: title + (body ? '\\n\\n' + body : ''),\n      Engagement_Score: orig.engagement_score || 0,\n      Likes_Reactions_Upvotes: orig.likes || 0,\n      Comments: orig.comments || 0,\n      Shares_Awards: 0,\n      Viral_Score: parseInt(ai.Viral_Score || ai.viral_score) || 0,\n      Hook_Pattern: s(ai.Hook_Pattern || ai.hook_pattern || ''),\n      Content_Structure: s(ai.Content_Structure || ai.content_structure || ''),\n      Emotional_Triggers: s(ai.Emotional_Triggers || ai.emotional_triggers || ''),\n      Viral_Elements: s(ai.Viral_Elements || ai.viral_elements || ''),\n      Script_Framework: s(ai.Script_Framework || ai.script_framework || ''),\n      Status: 'Generate Script',\n      Created_Date: new Date().toISOString().split('T')[0],\n      Script_Library: '',\n      Engagement_Rate: orig.engagement_rate || '0',\n      Followers: 0,\n      Saves: 0,\n      Shares: 0,\n      Impressions: orig.views || 0,\n      Clicks: 0,\n      Views: orig.views || 0,\n      Transcript: '',\n      // Keep these for the filter node\n      is_ai_ml_tech: ai.is_ai_ml_tech !== false,\n      news_relevance: parseInt(ai.news_relevance) || 0\n    }\n  });\n}\n\nconsole.log('Merged ' + output.length + ' posts with Gemini analysis for Airtable');\nreturn output.length > 0 ? output : [{ json: { _skip: true } }];"
       },
-      "id": "merge-analysis",
-      "name": "Merge Post + Gemini Analysis",
+      "id": "node-9",
+      "name": "Parse Gemini Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2220,
-        220
+        1504,
+        400
       ]
     },
     {
       "parameters": {
-        "jsCode": "const filtered = $input.all().filter(item => {\n  const d = item.json;\n  if (d._skip) return false;\n  return d.is_relevant || d.relevance_score >= 65 || d.viral_potential >= 45;\n});\n\nfiltered.sort((a, b) => ((b.json.relevance_score || 0) + (b.json.viral_potential || 0)) - ((a.json.relevance_score || 0) + (a.json.viral_potential || 0)));\n\nreturn filtered.slice(0, 60);"
+        "jsCode": "// Pass through posts that are AI/ML/Tech relevant\nreturn $input.all().filter(item => {\n  const d = item.json;\n  if (d._skip) return false;\n  return d.is_ai_ml_tech === true || d.news_relevance >= 50 || d.Viral_Score >= 30;\n});"
       },
-      "id": "filter-good",
-      "name": "Keep Only High-Quality",
+      "id": "node-filter-relevant",
+      "name": "Filter Relevant News Only",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2440,
-        220
+        1712,
+        400
       ]
     },
     {
@@ -209,92 +235,107 @@
         },
         "table": {
           "__rl": true,
-          "value": "={{ $env.AT_VIRAL_CONTENT_TABLE }}",
+          "value": "={{ $env.AT_TABLE_VIRAL_DB }}",
           "mode": "id"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Name": "={{ $json.title.substring(0, 140) || 'Untitled Post' }}",
-            "Post_ID": "={{ $json.post_id }}",
-            "Platform": "Reddit",
-            "Post_URL": "={{ $json.url }}",
-            "Content": "={{ $json.content }}",
-            "Subreddit": "={{ $json.subreddit }}",
-            "Likes": "={{ $json.likes }}",
-            "Comments": "={{ $json.comments }}",
-            "Relevance_Score": "={{ $json.relevance_score }}",
-            "Viral_Potential": "={{ $json.viral_potential }}",
-            "Status": "Generate Script",
-            "Created_Date": "={{ $now.format('yyyy-MM-dd') }}"
+            "Post_ID": "={{ $json.Post_ID }}",
+            "Platform": "={{ $json.Platform }}",
+            "Post_URL": "={{ $json.Post_URL }}",
+            "Content": "={{ $json.Content }}",
+            "Engagement_Score": "={{ $json.Engagement_Score }}",
+            "Likes_Reactions_Upvotes": "={{ $json.Likes_Reactions_Upvotes }}",
+            "Comments": "={{ $json.Comments }}",
+            "Shares_Awards": "={{ $json.Shares_Awards }}",
+            "Viral_Score": "={{ $json.Viral_Score }}",
+            "Hook_Pattern": "={{ $json.Hook_Pattern }}",
+            "Content_Structure": "={{ $json.Content_Structure }}",
+            "Emotional_Triggers": "={{ $json.Emotional_Triggers }}",
+            "Viral_Elements ": "={{ $json.Viral_Elements }}",
+            "Script_Framework": "={{ $json.Script_Framework }}",
+            "Status": "={{ $json.Status }}",
+            "Created_Date": "={{ $json.Created_Date }}",
+            "Script Library": "",
+            "Engagement_Rate": "={{ $json.Engagement_Rate }}",
+            "Followers": "=0",
+            "Saves": "=0",
+            "Shares": "=0",
+            "Impressions": "={{ $json.Impressions }}",
+            "Clicks": "=0",
+            "Views": "={{ $json.Views }}",
+            "Transcript": "",
+            "Name_review": "={{ $json.Name }}"
           }
         },
         "options": {
           "typecast": true
         }
       },
-      "id": "store-airtable",
-      "name": "Save to Viral Content Table",
+      "id": "node-10",
+      "name": "Store in Viral Content DB",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        2660,
-        220
+        1920,
+        400
       ],
       "credentials": {
         "airtableTokenApi": {
-          "id": "airtable-pat-2026-placeholder",
-          "name": "Airtable Personal Access Token"
+          "id": "rWrYEtYQAEpY7zli",
+          "name": "Airtable Personal Access Token account"
         }
       }
     }
   ],
+  "pinData": {},
   "connections": {
-    "every-day-6am": {
+    "Manual Trigger": {
       "main": [
         [
           {
-            "node": "Every Day 6AM",
+            "node": "Generate Reddit URLs",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Every Day 6AM": {
+    "Schedule Trigger": {
       "main": [
         [
           {
-            "node": "Generate Reddit JSON URLs",
+            "node": "Generate Reddit URLs",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Generate Reddit JSON URLs": {
+    "Generate Reddit URLs": {
       "main": [
         [
           {
-            "node": "Start Apify Reddit Scraper",
+            "node": "Start Reddit Scraper",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Start Apify Reddit Scraper": {
+    "Start Reddit Scraper": {
       "main": [
         [
           {
-            "node": "Wait 60 seconds",
+            "node": "Wait 30s",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Wait 60 seconds": {
+    "Wait 30s": {
       "main": [
         [
           {
@@ -309,94 +350,124 @@
       "main": [
         [
           {
-            "node": "Run Succeeded?",
+            "node": "Is Scraper Finished?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Run Succeeded?": {
+    "Is Scraper Finished?": {
       "main": [
         [
           {
-            "node": "Fetch Dataset Items",
+            "node": "Fetch Scraper Results",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Wait 60 seconds",
+            "node": "Wait 30s",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fetch Dataset Items": {
+    "Fetch Scraper Results": {
       "main": [
         [
           {
-            "node": "Parse & Deduplicate Posts",
+            "node": "Parse Reddit Posts (News Only)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parse & Deduplicate Posts": {
+    "Parse Reddit Posts (News Only)": {
       "main": [
         [
           {
-            "node": "Gemini – Relevance Check",
+            "node": "Remove Empty Items",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini – Relevance Check": {
+    "Remove Empty Items": {
       "main": [
         [
           {
-            "node": "Merge Post + Gemini Analysis",
+            "node": "Gemini Analyze News Post",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Merge Post + Gemini Analysis": {
+    "Gemini Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gemini Analyze News Post",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Analyze News Post": {
       "main": [
         [
           {
-            "node": "Keep Only High-Quality",
+            "node": "Parse Gemini Results",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Keep Only High-Quality": {
+    "Parse Gemini Results": {
       "main": [
         [
           {
-            "node": "Save to Viral Content Table",
+            "node": "Filter Relevant News Only",
             "type": "main",
             "index": 0
           }
         ]
+      ]
+    },
+    "Filter Relevant News Only": {
+      "main": [
+        [
+          {
+            "node": "Store in Viral Content DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store in Viral Content DB": {
+      "main": [
+        []
       ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1",
-    "timezone": "UTC"
+    "availableInMCP": false
   },
+  "versionId": "c12f3196-f951-4014-aa6b-3e9517a8210b",
   "meta": {
-    "templateCredsSetupCompleted": true
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1757b09cdae31473f3f31f6dcf3811ad0ffc8ba919e2d551dba14df63ed44210"
   },
+  "id": "0ZSLiDZcYmBRLfgI",
   "tags": []
 }
