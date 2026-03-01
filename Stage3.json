@@ -17,7 +17,7 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
       "position": [
-        100,
+        112,
         400
       ]
     },
@@ -34,36 +34,54 @@
           "value": "tblQafDU68ylW9f7p",
           "mode": "id"
         },
-        "options": {
-          "filterByFormula": "{Status} = 'Approved'",
-          "maxRecords": 20
-        }
+        "filterByFormula": "{Status} = 'Approved'",
+        "options": {}
       },
       "id": "node-read",
       "name": "Read Approved Scripts",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        300,
+        304,
         400
       ],
       "credentials": {
         "airtableTokenApi": {
-          "id": "rWrYEtYQAEpY7zli",
+          "id": "0kSWR6SLkrwa2ABm",
           "name": "Airtable Personal Access Token account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "/* PAIR-BASED GROUPING: Strict grouping by Source_Content_ID with Safety Checks */\nconst items = $input.all();\nif (!items || items.length === 0) return [];\n\nconst getVal = (obj, key) => {\n  const k = Object.keys(obj).find(x => x.toLowerCase().replace(/[\\s_]/g, '') === key.toLowerCase().replace(/[\\s_]/g, ''));\n  let val = k ? obj[k] : null;\n  if (Array.isArray(val)) val = val.join(', ');\n  return val || '';\n};\n\nlet targetSourceId = null;\nfor (const i of items) {\n  const sid = getVal(i.json, 'SourceContentID');\n  if (sid) { targetSourceId = sid; break; }\n}\nif (!targetSourceId) targetSourceId = items[0].json.id;\n\nconst pair = items.filter(i => {\n  const sid = getVal(i.json, 'SourceContentID');\n  return sid === targetSourceId || (!sid && i.json.id === targetSourceId);\n});\n\nconst fb = pair.find(i => getVal(i.json, 'TargetPlatforms').toLowerCase().includes('face'));\nconst li = pair.find(i => getVal(i.json, 'TargetPlatforms').toLowerCase().includes('linked'));\n\nconst buildMsg = (item) => {\n  if (!item) return null;\n  const hook = item.json.Hook || '';\n  const body = item.json.Main_Content || '';\n  const cta = getVal(item.json, 'CTA');\n  const full = (hook + '\\n\\n' + body + '\\n\\n' + cta).trim();\n  \n  // SAFETY GATE: If script contains n8n placeholders, BLOCK IT\n  if (full.includes('{{') || full.includes('$json')) {\n    console.error('BLOCKING DIRTY SCRIPT: ' + item.json.id);\n    return null;\n  }\n  return full;\n};\n\nreturn [{\n  json: {\n    source_id: targetSourceId,\n    fb_msg: buildMsg(fb),\n    fb_id: fb ? fb.json.id : null,\n    li_msg: buildMsg(li),\n    li_id: li ? li.json.id : null\n  }\n}];"
+        "jsCode": "/* PAIR-BASED GROUPING: Groups strictly by Source_Content_ID */\nconst items = $input.all();\nif (!items || items.length === 0) return [];\n\nconst getSourceContentId = (obj) => {\n  const rawSid = obj['Source_Content_ID'];\n  if (Array.isArray(rawSid)) return rawSid[0];\n  return rawSid || '';\n};\n\nconst getVal = (obj, key) => {\n  const k = Object.keys(obj).find(x => x.toLowerCase().replace(/[\\s_]/g, '') === key.toLowerCase().replace(/[\\s_]/g, ''));\n  let val = k ? obj[k] : null;\n  if (Array.isArray(val)) val = val[0];\n  return val || '';\n};\n\nlet targetSourceContentId = null;\nfor (const i of items) {\n  const sid = getSourceContentId(i.json);\n  if (sid) { targetSourceContentId = sid; break; }\n}\nif (!targetSourceContentId) return [];\n\nconst pair = items.filter(i => getSourceContentId(i.json) === targetSourceContentId);\n\nconst fb = pair.find(i => getVal(i.json, 'TargetPlatforms').toLowerCase().includes('face'));\nconst li = pair.find(i => getVal(i.json, 'TargetPlatforms').toLowerCase().includes('linked'));\n\nconst buildMsg = (item) => {\n  if (!item) return null;\n  const hook = item.json.Hook || '';\n  const body = item.json.Main_Content || '';\n  const cta = getVal(item.json, 'CTA');\n  const full = (hook + '\\n\\n' + body + '\\n\\n' + cta).trim();\n  if (full.includes('{{') || full.includes('$json')) {\n    console.error('BLOCKING DIRTY SCRIPT: ' + item.json.id);\n    return null;\n  }\n  return full;\n};\n\nconst results = [];\n\nif (fb) {\n  results.push({\n    json: {\n      Source_Content_ID: targetSourceContentId,\n      platform: 'Facebook',\n      record_id: fb.json.id,\n      msg: buildMsg(fb)\n    }\n  });\n}\n\nif (li) {\n  results.push({\n    json: {\n      Source_Content_ID: targetSourceContentId,\n      platform: 'LinkedIn',\n      record_id: li.json.id,\n      msg: buildMsg(li)\n    }\n  });\n}\n\nreturn results;"
       },
       "id": "node-group",
       "name": "Group Topic Pair",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
       "position": [
-        520,
+        528,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.platform }}",
+              "value2": "Facebook"
+            }
+          ]
+        }
+      },
+      "id": "node-if-fb",
+      "name": "Is Facebook?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        720,
         400
       ]
     },
@@ -76,7 +94,7 @@
           "parameters": [
             {
               "name": "message",
-              "value": "={{ $(\"Group Topic Pair\").item.json.fb_msg }}"
+              "value": "={{ $json.msg }}"
             },
             {
               "name": "access_token",
@@ -91,14 +109,15 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        750,
-        300
+        960,
+        288
       ],
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "text": "={{ $(\"Group Topic Pair\").item.json.li_msg }}",
+        "person": "pxxzor9T6y",
+        "text": "={{ $json.msg }}",
         "additionalFields": {}
       },
       "id": "node-post-li",
@@ -106,16 +125,42 @@
       "type": "n8n-nodes-base.linkedIn",
       "typeVersion": 1,
       "position": [
-        750,
-        500
+        960,
+        528
       ],
       "credentials": {
         "linkedInOAuth2Api": {
-          "id": "EjVjU4yvzE7uSE2U",
-          "name": "LinkedIn account 2"
+          "id": "zPP3PUGbrqJ0ReHh",
+          "name": "LinkedIn account"
         }
       },
       "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Carry FB record_id forward after Facebook post\nconst fbItem = $('Is Facebook?').first();\nconst record_id = fbItem.json.record_id;\nconst Source_Content_ID = fbItem.json.Source_Content_ID;\nreturn [{ json: { record_id, Source_Content_ID } }];"
+      },
+      "id": "node-carry-fb",
+      "name": "Carry FB Record ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Carry LI record_id forward after LinkedIn post\nconst liItem = $('Group Topic Pair').all().find(i => i.json.platform === 'LinkedIn');\nconst record_id = liItem ? liItem.json.record_id : null;\nconst Source_Content_ID = liItem ? liItem.json.Source_Content_ID : null;\nreturn [{ json: { record_id, Source_Content_ID } }];"
+      },
+      "id": "node-carry-li",
+      "name": "Carry LI Record ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        528
+      ]
     },
     {
       "parameters": {
@@ -130,14 +175,251 @@
           "value": "tblQafDU68ylW9f7p",
           "mode": "id"
         },
-        "id": "={{ $(\"Group Topic Pair\").item.json.fb_id }}",
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Status": "={{ $(\"Group Topic Pair\").item.json.fb_msg ? 'Posted' : 'Generation Error' }}",
-            "Published_Date": "={{ $(\"Group Topic Pair\").item.json.fb_msg ? $now.format('yyyy-MM-dd') : null }}"
+            "Status": "Posted",
+            "Published_Date": "={{ $now.format('yyyy-MM-dd') }}",
+            "Estimated_Duration": 0,
+            "Source_Content_ID": "=",
+            "id": "={{ $json.record_id }}"
           },
-          "matchingColumns": []
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Source_Content_ID",
+              "displayName": "Source_Content_ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Script_Title",
+              "displayName": "Script_Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Hook",
+              "displayName": "Hook",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Main_Content",
+              "displayName": "Main_Content",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "CTA ",
+              "displayName": "CTA ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Visual_Cues",
+              "displayName": "Visual_Cues",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Tone",
+              "displayName": "Tone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Hashtags",
+              "displayName": "Hashtags",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estimated_Duration",
+              "displayName": "Estimated_Duration",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Target_Platforms ",
+              "displayName": "Target_Platforms ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "options": [
+                {
+                  "name": "LinkedIn",
+                  "value": "LinkedIn"
+                },
+                {
+                  "name": "Facebook",
+                  "value": "Facebook"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pending Approval",
+                  "value": "Pending Approval"
+                },
+                {
+                  "name": "Approved",
+                  "value": "Approved"
+                },
+                {
+                  "name": "Rejected",
+                  "value": "Rejected"
+                },
+                {
+                  "name": "Draft",
+                  "value": "Draft"
+                },
+                {
+                  "name": "Posted",
+                  "value": "Posted"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Feedback",
+              "displayName": "Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Created_Date",
+              "displayName": "Created_Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Video Production Queue",
+              "displayName": "Video Production Queue",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Video RENDERS",
+              "displayName": "Video RENDERS",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Published_Date",
+              "displayName": "Published_Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {
           "typecast": true
@@ -148,12 +430,12 @@
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        1000,
-        300
+        1360,
+        288
       ],
       "credentials": {
         "airtableTokenApi": {
-          "id": "rWrYEtYQAEpY7zli",
+          "id": "0kSWR6SLkrwa2ABm",
           "name": "Airtable Personal Access Token account"
         }
       },
@@ -172,14 +454,250 @@
           "value": "tblQafDU68ylW9f7p",
           "mode": "id"
         },
-        "id": "={{ $(\"Group Topic Pair\").item.json.li_id }}",
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Status": "={{ $(\"Group Topic Pair\").item.json.li_msg ? 'Posted' : 'Generation Error' }}",
-            "Published_Date": "={{ $(\"Group Topic Pair\").item.json.li_msg ? $now.format('yyyy-MM-dd') : null }}"
+            "Status": "Posted",
+            "Published_Date": "={{ $now.format('yyyy-MM-dd') }}",
+            "Estimated_Duration": 0,
+            "id": "={{ $json.record_id }}"
           },
-          "matchingColumns": []
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Source_Content_ID",
+              "displayName": "Source_Content_ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Script_Title",
+              "displayName": "Script_Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Hook",
+              "displayName": "Hook",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Main_Content",
+              "displayName": "Main_Content",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "CTA ",
+              "displayName": "CTA ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Visual_Cues",
+              "displayName": "Visual_Cues",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Tone",
+              "displayName": "Tone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Hashtags",
+              "displayName": "Hashtags",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estimated_Duration",
+              "displayName": "Estimated_Duration",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Target_Platforms ",
+              "displayName": "Target_Platforms ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "options": [
+                {
+                  "name": "LinkedIn",
+                  "value": "LinkedIn"
+                },
+                {
+                  "name": "Facebook",
+                  "value": "Facebook"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pending Approval",
+                  "value": "Pending Approval"
+                },
+                {
+                  "name": "Approved",
+                  "value": "Approved"
+                },
+                {
+                  "name": "Rejected",
+                  "value": "Rejected"
+                },
+                {
+                  "name": "Draft",
+                  "value": "Draft"
+                },
+                {
+                  "name": "Posted",
+                  "value": "Posted"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Feedback",
+              "displayName": "Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Created_Date",
+              "displayName": "Created_Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Video Production Queue",
+              "displayName": "Video Production Queue",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Video RENDERS",
+              "displayName": "Video RENDERS",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Published_Date",
+              "displayName": "Published_Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {
           "typecast": true
@@ -190,17 +708,19 @@
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.1,
       "position": [
-        1000,
-        500
+        1360,
+        528
       ],
       "credentials": {
         "airtableTokenApi": {
-          "id": "rWrYEtYQAEpY7zli",
+          "id": "0kSWR6SLkrwa2ABm",
           "name": "Airtable Personal Access Token account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
+  "pinData": {},
   "connections": {
     "Every 1 Minute": {
       "main": [
@@ -228,10 +748,23 @@
       "main": [
         [
           {
+            "node": "Is Facebook?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Facebook?": {
+      "main": [
+        [
+          {
             "node": "Post to Facebook",
             "type": "main",
             "index": 0
-          },
+          }
+        ],
+        [
           {
             "node": "Post to LinkedIn",
             "type": "main",
@@ -244,7 +777,7 @@
       "main": [
         [
           {
-            "node": "Mark FB Posted",
+            "node": "Carry FB Record ID",
             "type": "main",
             "index": 0
           }
@@ -255,6 +788,28 @@
       "main": [
         [
           {
+            "node": "Carry LI Record ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carry FB Record ID": {
+      "main": [
+        [
+          {
+            "node": "Mark FB Posted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carry LI Record ID": {
+      "main": [
+        [
+          {
             "node": "Mark LI Posted",
             "type": "main",
             "index": 0
@@ -262,5 +817,13 @@
         ]
       ]
     }
-  }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "673478a8-4ff0-4063-9857-60d73adbb8fd",
+  "meta": {
+    "instanceId": "59f8cb346b5d8766759dae082492ff78f5a0d022521aa8125464caad6f9a6bc3"
+  },
+  "id": "A4aPyO5CWy0Kqtcr",
+  "tags": []
 }
