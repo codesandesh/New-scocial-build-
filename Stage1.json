@@ -24,7 +24,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const subreddits = ['Artificial', 'ArtificialInteligence', 'OpenAI', 'MachineLearning', 'singularity'];\nconst urls = subreddits.map(sub => ({\n  url: `https://www.reddit.com/r/${sub}/top.json?t=day&limit=12`\n}));\nreturn [{ json: { startUrls: urls } }];"
+        "jsCode": "const subreddits = ['MachineLearning', 'Artificial', 'OpenAI', 'ChatGPT', 'ArtificialIntelligence', 'DeepLearning', 'AGI', 'technology', 'technews', 'Gadgets', 'Futurology', 'Computing', 'learnmachinelearning', 'datascience', 'programming'];\nconst urls = subreddits.map(sub => ({\n  url: `https://www.reddit.com/r/${sub}/top.json?t=day&limit=10`\n}));\nreturn [{ json: { startUrls: urls } }];"
       },
       "id": "generate-urls",
       "name": "Generate Reddit JSON URLs",
@@ -50,7 +50,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ startUrls: $json.startUrls, maxItems: 80, skipComments: true, maxPostCount: 15, proxy: { useApifyProxy: true } }) }}",
+        "jsonBody": "={{ JSON.stringify({ startUrls: $json.startUrls, maxItems: 150, skipComments: true, maxPostCount: 10, proxy: { useApifyProxy: true } }) }}",
         "options": {
           "timeout": 60000
         }
@@ -117,7 +117,7 @@
     },
     {
       "parameters": {
-        "url": "=https://api.apify.com/v2/datasets/{{ $json[\"Check Scraper Status\"].json[\"data\"][\"defaultDatasetId\"] }}/items?token={{ $env.APIFY_API_TOKEN }}&limit=120"
+        "url": "=https://api.apify.com/v2/datasets/{{ $json[\"Check Scraper Status\"].json[\"data\"][\"defaultDatasetId\"] }}/items?token={{ $env.APIFY_API_TOKEN }}&limit=150"
       },
       "id": "fetch-dataset",
       "name": "Fetch Dataset Items",
@@ -188,7 +188,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().filter(item => {\n  const d = item.json;\n  if (d._skip) return false;\n  return d.is_relevant || d.relevance_score >= 65 || d.viral_potential >= 45;\n});"
+        "jsCode": "const filtered = $input.all().filter(item => {\n  const d = item.json;\n  if (d._skip) return false;\n  return d.is_relevant || d.relevance_score >= 65 || d.viral_potential >= 45;\n});\n\nfiltered.sort((a, b) => ((b.json.relevance_score || 0) + (b.json.viral_potential || 0)) - ((a.json.relevance_score || 0) + (a.json.viral_potential || 0)));\n\nreturn filtered.slice(0, 60);"
       },
       "id": "filter-good",
       "name": "Keep Only High-Quality",
