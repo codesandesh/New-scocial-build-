@@ -54,7 +54,7 @@
     },
     {
       "parameters": {
-        "jsCode": "/* PAIR-BASED GROUPING: Groups strictly by Source_Content_ID */\nconst items = $input.all();\nif (!items || items.length === 0) return [];\n\nconst getSourceContentId = (obj) => {\n  const rawSid = obj['Source_Content_ID'];\n  if (Array.isArray(rawSid)) return rawSid[0];\n  return rawSid || '';\n};\n\nconst getVal = (obj, key) => {\n  const k = Object.keys(obj).find(x => x.toLowerCase().replace(/[\\s_]/g, '') === key.toLowerCase().replace(/[\\s_]/g, ''));\n  let val = k ? obj[k] : null;\n  if (Array.isArray(val)) val = val[0];\n  return val || '';\n};\n\nlet targetSourceContentId = null;\nfor (const i of items) {\n  const sid = getSourceContentId(i.json);\n  if (sid) { targetSourceContentId = sid; break; }\n}\nif (!targetSourceContentId) return [];\n\nconst pair = items.filter(i => getSourceContentId(i.json) === targetSourceContentId);\n\nconst fb = pair.find(i => getVal(i.json, 'TargetPlatforms').toLowerCase().includes('face'));\nconst li = pair.find(i => getVal(i.json, 'TargetPlatforms').toLowerCase().includes('linked'));\n\nconst buildMsg = (item) => {\n  if (!item) return null;\n  const hook = item.json.Hook || '';\n  const body = item.json.Main_Content || '';\n  const cta = getVal(item.json, 'CTA');\n  const full = (hook + '\\n\\n' + body + '\\n\\n' + cta).trim();\n  if (full.includes('{{') || full.includes('$json')) {\n    console.error('BLOCKING DIRTY SCRIPT: ' + item.json.id);\n    return null;\n  }\n  return full;\n};\n\nconst results = [];\n\nif (fb) {\n  results.push({\n    json: {\n      Source_Content_ID: targetSourceContentId,\n      platform: 'Facebook',\n      record_id: fb.json.id,\n      msg: buildMsg(fb)\n    }\n  });\n}\n\nif (li) {\n  results.push({\n    json: {\n      Source_Content_ID: targetSourceContentId,\n      platform: 'LinkedIn',\n      record_id: li.json.id,\n      msg: buildMsg(li)\n    }\n  });\n}\n\nreturn results;"
+        "jsCode": "/* PAIR-BASED GROUPING: Groups strictly by Source_Content_ID */\nconst items = $input.all();\nif (!items || items.length === 0) return [];\n\nconst getSourceContentId = (obj) => {\n  const rawSid = obj['Source_Content_ID'];\n  if (Array.isArray(rawSid)) return rawSid[0];\n  return rawSid || '';\n};\n\nconst getVal = (obj, key) => {\n  const k = Object.keys(obj).find(x => x.toLowerCase().replace(/[\\s_]/g, '') === key.toLowerCase().replace(/[\\s_]/g, ''));\n  let val = k ? obj[k] : null;\n  if (Array.isArray(val)) val = val[0];\n  return val || '';\n};\n\nlet targetSourceContentId = null;\nfor (const i of items) {\n  const sid = getSourceContentId(i.json);\n  if (sid) { targetSourceContentId = sid; break; }\n}\nif (!targetSourceContentId) return [];\n\nconst pair = items.filter(i => getSourceContentId(i.json) === targetSourceContentId);\n\nconst fb = pair.find(i => getVal(i.json, 'TargetPlatforms').toLowerCase().includes('face'));\nconst li = pair.find(i => getVal(i.json, 'TargetPlatforms').toLowerCase().includes('linked'));\n\nconst buildMsg = (item) => {\n  if (!item) return null;\n  const hook = item.json.Hook || '';\n  const body = item.json.Main_Content || '';\n  const cta = getVal(item.json, 'CTA');\n  const hashtags = item.json.Hashtags || '';\n  const full = [hook, body, cta, hashtags].filter(Boolean).join('\\n\\n').trim();\n  if (full.includes('{{') || full.includes('$json')) {\n    console.error('BLOCKING DIRTY SCRIPT: ' + item.json.id);\n    return null;\n  }\n  return full;\n};\n\nconst results = [];\n\nif (fb) {\n  results.push({\n    json: {\n      Source_Content_ID: targetSourceContentId,\n      platform: 'Facebook',\n      record_id: fb.json.id,\n      msg: buildMsg(fb)\n    }\n  });\n}\n\nif (li) {\n  results.push({\n    json: {\n      Source_Content_ID: targetSourceContentId,\n      platform: 'LinkedIn',\n      record_id: li.json.id,\n      msg: buildMsg(li)\n    }\n  });\n}\n\nreturn results;"
       },
       "id": "node-group",
       "name": "Group Topic Pair",
@@ -99,6 +99,10 @@
             {
               "name": "access_token",
               "value": "={{ $env.FACEBOOK_PAGE_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "published",
+              "value": "true"
             }
           ]
         },
@@ -116,7 +120,7 @@
     },
     {
       "parameters": {
-        "person": "pxxzor9T6y",
+        "person": "cg8K5Jjk9V",
         "text": "={{ $json.msg }}",
         "additionalFields": {}
       },
@@ -181,7 +185,6 @@
             "Status": "Posted",
             "Published_Date": "={{ $now.format('yyyy-MM-dd') }}",
             "Estimated_Duration": 0,
-            "Source_Content_ID": "=",
             "id": "={{ $json.record_id }}"
           },
           "matchingColumns": [
@@ -820,9 +823,10 @@
   },
   "active": false,
   "settings": {},
-  "versionId": "673478a8-4ff0-4063-9857-60d73adbb8fd",
+  "versionId": "0e20fd15-a577-40cd-b61c-d3f1f9c7a9c3",
   "meta": {
-    "instanceId": "59f8cb346b5d8766759dae082492ff78f5a0d022521aa8125464caad6f9a6bc3"
+    "instanceId": "59f8cb346b5d8766759dae082492ff78f5a0d022521aa8125464caad6f9a6bc3",
+    "templateCredsSetupCompleted": true
   },
   "id": "A4aPyO5CWy0Kqtcr",
   "tags": []

@@ -55,6 +55,9 @@ services:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
 
+      # ── Stage 1 + 2: Anthropic Claude ───────────────────────
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
       # ── Stage 1 + 2 + 3: Airtable ──────────────────────────
       - AIRTABLE_BASE_ID=${AIRTABLE_BASE_ID}
       - AT_VIRAL_CONTENT_TABLE=${AT_VIRAL_CONTENT_TABLE}
